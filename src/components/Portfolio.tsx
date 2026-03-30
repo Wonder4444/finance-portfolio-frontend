@@ -73,9 +73,14 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings }) => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px' }}
-                  itemStyle={{ color: '#fff' }}
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--background)',
+                    borderColor: 'var(--border)',
+                    fontSize: '12px',
+                    color: 'var(--foreground)'
+                  }}
+                  itemStyle={{ color: 'var(--foreground)' }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -84,7 +89,7 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings }) => {
 
         <div className="glass-panel overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-white/5 border-b border-white/10">
+            <thead className="bg-[var(--foreground)]/5 border-b border-[var(--border)]">
               <tr>
                 <th className="p-3 font-mono uppercase opacity-50">Asset</th>
                 <th className="p-3 font-mono uppercase opacity-50">Amount</th>
@@ -92,9 +97,9 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings }) => {
                 <th className="p-3 font-mono uppercase opacity-50">P/L</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-[var(--border)]/10">
               {holdings.map((h) => (
-                <tr key={h.id} className="hover:bg-white/5 transition-colors">
+                <tr key={h.id} className="hover:bg-[var(--foreground)]/5 transition-colors">
                   <td className="p-3">
                     <div className="flex flex-col">
                       <span className="font-bold">{h.symbol}</span>

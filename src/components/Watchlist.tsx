@@ -12,7 +12,7 @@ interface WatchlistProps {
 export const Watchlist: React.FC<WatchlistProps> = ({ assets, onSelect, selectedId }) => {
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-white/10 flex items-center justify-between">
+      <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
         <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">Watchlist</h2>
         <div className="flex gap-2">
           <button className="text-[10px] opacity-40 hover:opacity-100 transition-opacity uppercase">Edit</button>
@@ -25,8 +25,8 @@ export const Watchlist: React.FC<WatchlistProps> = ({ assets, onSelect, selected
             key={asset.id}
             onClick={() => onSelect(asset)}
             className={cn(
-              "p-4 border-b border-white/5 cursor-pointer transition-all duration-200 flex items-center justify-between",
-              selectedId === asset.id ? "bg-white/10 border-l-2 border-l-blue-500" : "hover:bg-white/5"
+              "p-4 border-b border-[var(--border)]/5 cursor-pointer transition-all duration-200 flex items-center justify-between",
+              selectedId === asset.id ? "bg-[var(--foreground)]/10 border-l-2 border-l-blue-500" : "hover:bg-[var(--foreground)]/5"
             )}
           >
             <div className="flex flex-col">

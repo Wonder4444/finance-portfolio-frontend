@@ -4,9 +4,10 @@ import { createChart, ColorType, IChartApi, CandlestickSeries } from 'lightweigh
 interface CandlestickChartProps {
   data: any[];
   containerId: string;
+  theme: 'light' | 'dark';
 }
 
-export const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, containerId }) => {
+export const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, containerId, theme }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
 
@@ -15,26 +16,27 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, contai
 
     const handleResize = () => {
       if (chartRef.current && chartContainerRef.current) {
-        chartRef.current.applyOptions({ 
+        chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight 
+          height: chartContainerRef.current.clientHeight
         });
       }
     };
 
+    const isDark = theme === 'dark';
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#d1d1d1',
+        textColor: isDark ? '#d1d1d1' : '#333333',
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        vertLines: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
+        horzLines: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
       },
       width: chartContainerRef.current.clientWidth,
       height: chartContainerRef.current.clientHeight,
       timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
       },
     });
 
@@ -55,7 +57,8 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({ data, contai
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [data]);
+  }, [data, theme]);
+
 
   return <div ref={chartContainerRef} className="w-full h-full" id={containerId} />;
 };

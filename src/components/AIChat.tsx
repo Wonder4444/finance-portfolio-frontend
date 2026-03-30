@@ -30,7 +30,7 @@ export const AIChat: React.FC = () => {
     setIsLoading(true);
 
     const response = await chatWithAI(input);
-    
+
     const assistantMsg: ChatMessage = {
       role: 'assistant',
       content: response || 'I am sorry, I could not process that.',
@@ -43,7 +43,7 @@ export const AIChat: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full glass-panel border-none">
-      <div className="p-4 border-b border-white/10 flex items-center gap-2">
+      <div className="p-4 border-b border-[var(--border)] flex items-center gap-2">
         <Bot size={20} className="text-blue-400" />
         <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">AI Advisor</h2>
       </div>
@@ -59,15 +59,15 @@ export const AIChat: React.FC = () => {
           >
             <div className={cn(
               "w-8 h-8 flex items-center justify-center shrink-0",
-              msg.role === 'user' ? "bg-white/10" : "bg-blue-500/20"
+              msg.role === 'user' ? "bg-[var(--foreground)]/10" : "bg-blue-500/20"
             )}>
               {msg.role === 'user' ? <User size={16} /> : <Bot size={16} className="text-blue-400" />}
             </div>
             <div className={cn(
               "p-3 text-sm leading-relaxed",
-              msg.role === 'user' ? "bg-white/5" : "bg-white/5 border border-white/5"
+              msg.role === 'user' ? "bg-[var(--foreground)]/5" : "bg-[var(--foreground)]/5 border border-[var(--border)]/5"
             )}>
-              <div className="prose prose-invert prose-sm max-w-none">
+              <div className="prose dark:prose-invert prose-sm max-w-none">
                 <ReactMarkdown>
                   {msg.content}
                 </ReactMarkdown>
@@ -80,12 +80,12 @@ export const AIChat: React.FC = () => {
             <div className="w-8 h-8 flex items-center justify-center shrink-0 bg-blue-500/20">
               <Loader2 size={16} className="text-blue-400 animate-spin" />
             </div>
-            <div className="p-3 text-sm bg-white/5 animate-pulse">Thinking...</div>
+            <div className="p-3 text-sm bg-[var(--foreground)]/5 animate-pulse">Thinking...</div>
           </div>
         )}
       </div>
 
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-[var(--border)]">
         <div className="flex gap-2">
           <input
             type="text"
@@ -93,7 +93,7 @@ export const AIChat: React.FC = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask about your portfolio..."
-            className="flex-1 bg-white/5 border border-white/10 p-2 text-sm focus:outline-none focus:border-blue-500/50"
+            className="flex-1 bg-[var(--foreground)]/5 border border-[var(--border)] p-2 text-sm focus:outline-none focus:border-blue-500/50"
           />
           <button
             onClick={handleSend}
