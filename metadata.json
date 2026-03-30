@@ -1,0 +1,5 @@
+{
+  "name": "WealthWise",
+  "description": "A minimalist wealth management system featuring real-time watchlists, portfolio tracking, financial news timelines, and AI-powered investment insights.",
+  "requestFramePermissions": []
+}
