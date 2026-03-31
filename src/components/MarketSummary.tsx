@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { createChart, ColorType, AreaSeries, IChartApi } from 'lightweight-charts';
-import { ChevronRight, Sun } from 'lucide-react';
+import { ChevronRight, Sun, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import type { TickerSummary } from '../services/priceApi';
 
 // Generate mock data mimicking the S&P 500 chart shown in the image
 const MOCK_AREA_CHART_DATA = Array.from({ length: 400 }, (_, i) => {
@@ -109,15 +110,6 @@ const INDICES = [
     { id: '6', name: 'CAC 40', symbol: 'PX1', type: 'D', value: '7,713.88', currency: 'EUR', change: '+0.15%', isNegative: false, icon: '40', iconColor: 'bg-[#059669]' },
 ];
 
-const HIGHEST_VOLUME_STOCKS = [
-    { id: 's1', name: 'NVIDIA Corporation', symbol: 'NVDA', value: '167.52', currency: 'USD', change: '-2.17%', isNegative: true, icon: 'https://logo.clearbit.com/nvidia.com' },
-    { id: 's4', name: 'Tesla, Inc.', symbol: 'TSLA', value: '361.83', currency: 'USD', change: '-2.76%', isNegative: true, icon: 'https://logo.clearbit.com/tesla.com' },
-    { id: 's5', name: 'Micron Technology', symbol: 'MU', value: '357.22', currency: 'USD', change: '+0.50%', isNegative: false, icon: 'https://logo.clearbit.com/micron.com' },
-    { id: 's3', name: 'Meta Platforms, Inc.', symbol: 'META', value: '525.72', currency: 'USD', change: '-3.99%', isNegative: true, icon: 'https://logo.clearbit.com/meta.com' },
-    { id: 's2', name: 'Microsoft Corporation', symbol: 'MSFT', value: '356.77', currency: 'USD', change: '-2.51%', isNegative: true, icon: 'https://logo.clearbit.com/microsoft.com' },
-    { id: 's6', name: 'Apple Inc.', symbol: 'AAPL', value: '248.80', currency: 'USD', change: '-1.62%', isNegative: true, icon: 'https://logo.clearbit.com/apple.com' },
-];
-
 const HIGHEST_VOLUME_CRYPTO = [
     { id: 'c1', name: 'Bitcoin', symbol: 'BTC', value: '64,231.50', currency: 'USD', change: '-1.82%', isNegative: true, icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
     { id: 'c2', name: 'Ethereum', symbol: 'ETH', value: '3,452.10', currency: 'USD', change: '+1.34%', isNegative: false, icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
@@ -126,6 +118,44 @@ const HIGHEST_VOLUME_CRYPTO = [
     { id: 'c5', name: 'Cardano', symbol: 'ADA', value: '0.45', currency: 'USD', change: '-2.13%', isNegative: true, icon: 'https://cryptologos.cc/logos/cardano-ada-logo.png' },
     { id: 'c6', name: 'Dogecoin', symbol: 'DOGE', value: '0.16', currency: 'USD', change: '+12.45%', isNegative: false, icon: 'https://cryptologos.cc/logos/dogecoin-doge-logo.png' },
 ];
+
+// Fallback static stock data (used when API data is not available)
+const FALLBACK_STOCKS = [
+    { id: 's1', name: 'NVIDIA Corporation', symbol: 'NVDA', value: '167.52', currency: 'USD', change: '-2.17%', isNegative: true, icon: 'https://logo.clearbit.com/nvidia.com' },
+    { id: 's4', name: 'Tesla, Inc.', symbol: 'TSLA', value: '361.83', currency: 'USD', change: '-2.76%', isNegative: true, icon: 'https://logo.clearbit.com/tesla.com' },
+    { id: 's5', name: 'Micron Technology', symbol: 'MU', value: '357.22', currency: 'USD', change: '+0.50%', isNegative: false, icon: 'https://logo.clearbit.com/micron.com' },
+    { id: 's3', name: 'Meta Platforms, Inc.', symbol: 'META', value: '525.72', currency: 'USD', change: '-3.99%', isNegative: true, icon: 'https://logo.clearbit.com/meta.com' },
+    { id: 's2', name: 'Microsoft Corporation', symbol: 'MSFT', value: '356.77', currency: 'USD', change: '-2.51%', isNegative: true, icon: 'https://logo.clearbit.com/microsoft.com' },
+    { id: 's6', name: 'Apple Inc.', symbol: 'AAPL', value: '248.80', currency: 'USD', change: '-1.62%', isNegative: true, icon: 'https://logo.clearbit.com/apple.com' },
+];
+
+// Icon map for tickers from the API
+const TICKER_ICONS: Record<string, string> = {
+    AAPL: 'https://logo.clearbit.com/apple.com',
+    TSLA: 'https://logo.clearbit.com/tesla.com',
+    AMZN: 'https://logo.clearbit.com/amazon.com',
+    C: 'https://logo.clearbit.com/citigroup.com',
+    FB: 'https://logo.clearbit.com/meta.com',
+};
+
+/**
+ * Convert TickerSummary[] to the format used by MarketGridItem
+ */
+function summariesToMarketItems(summaries: TickerSummary[]) {
+    return summaries
+        .sort((a, b) => b.totalVolume - a.totalVolume)
+        .map((s, i) => ({
+            id: `live-${s.ticker}-${i}`,
+            name: s.name,
+            symbol: s.ticker,
+            value: s.latestPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            currency: 'USD',
+            change: `${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`,
+            isNegative: s.changePercent < 0,
+            icon: TICKER_ICONS[s.ticker] || `https://ui-avatars.com/api/?name=${s.ticker}&background=random`,
+            isLive: true,
+        }));
+}
 
 function MarketGridItem({ item }: { item: any }) {
     return (
@@ -144,7 +174,11 @@ function MarketGridItem({ item }: { item: any }) {
                 <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                         <span className="text-[13px] font-medium leading-none truncate">{item.name}</span>
-                        <Sun size={10} className="text-orange-400 fill-orange-400 opacity-60 shrink-0" />
+                        {item.isLive ? (
+                            <span className="text-[7px] px-1 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono leading-none shrink-0">LIVE</span>
+                        ) : (
+                            <Sun size={10} className="text-orange-400 fill-orange-400 opacity-60 shrink-0" />
+                        )}
                     </div>
                     <span className="text-[9px] px-1 py-0.5 bg-[var(--foreground)]/5 border border-[var(--border)] rounded font-semibold text-[var(--foreground)]/60 w-max leading-none">
                         {item.symbol}
@@ -164,35 +198,42 @@ function MarketGridItem({ item }: { item: any }) {
     );
 }
 
-function MarketList({ title, items, footerLabel }: { title: string, items: any[], footerLabel: string }) {
+function MarketList({ title, items, footerLabel, isLoading }: { title: string, items: any[], footerLabel: string, isLoading?: boolean }) {
     return (
         <div className="flex flex-col h-full space-y-4">
             <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{title}</h2>
             <div className="glass-panel p-6 flex flex-col overflow-hidden">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                    {/* First column */}
-                    <div className="flex flex-col">
-                        {items.slice(0, 3).map((item, i) => (
-                            <React.Fragment key={item.id}>
-                                <MarketGridItem item={item} />
-                                {i < 2 && (
-                                    <div className="h-px w-full bg-[var(--border)]/50 ml-10"></div>
-                                )}
-                            </React.Fragment>
-                        ))}
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-8 gap-2 opacity-40">
+                        <Loader2 size={16} className="animate-spin" />
+                        <span className="text-sm">Loading live data...</span>
                     </div>
-                    {/* Second column */}
-                    <div className="flex flex-col">
-                        {items.slice(3, 6).map((item, i) => (
-                            <React.Fragment key={item.id}>
-                                <MarketGridItem item={item} />
-                                {i < 2 && (
-                                    <div className="h-px w-full bg-[var(--border)]/50 ml-10"></div>
-                                )}
-                            </React.Fragment>
-                        ))}
+                ) : (
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                        {/* First column */}
+                        <div className="flex flex-col">
+                            {items.slice(0, 3).map((item, i) => (
+                                <React.Fragment key={item.id}>
+                                    <MarketGridItem item={item} />
+                                    {i < 2 && (
+                                        <div className="h-px w-full bg-[var(--border)]/50 ml-10"></div>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                        {/* Second column */}
+                        <div className="flex flex-col">
+                            {items.slice(3, 6).map((item, i) => (
+                                <React.Fragment key={item.id}>
+                                    <MarketGridItem item={item} />
+                                    {i < 2 && (
+                                        <div className="h-px w-full bg-[var(--border)]/50 ml-10"></div>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
                 <div className="mt-4 pt-4 border-t border-[var(--border)]">
                     <button className="text-[13px] text-blue-600 dark:text-blue-400 font-medium hover:underline transition-all flex items-center">
                         {footerLabel} <ChevronRight size={14} className="ml-0.5" />
@@ -203,7 +244,26 @@ function MarketList({ title, items, footerLabel }: { title: string, items: any[]
     );
 }
 
-export function MarketSummary({ theme }: { theme: 'light' | 'dark' }) {
+interface MarketSummaryProps {
+    theme: 'light' | 'dark';
+    tickerSummaries?: TickerSummary[];
+    isLoading?: boolean;
+}
+
+export function MarketSummary({ theme, tickerSummaries = [], isLoading = false }: MarketSummaryProps) {
+    // Convert live ticker summaries to market items, or use fallback
+    const liveStockItems = tickerSummaries.length > 0
+        ? summariesToMarketItems(tickerSummaries)
+        : FALLBACK_STOCKS;
+
+    // Pad to 6 items if fewer than 6 live items: fill remaining slots with fallback
+    const stockItems = liveStockItems.length >= 6
+        ? liveStockItems.slice(0, 6)
+        : [
+            ...liveStockItems,
+            ...FALLBACK_STOCKS.filter(fb => !liveStockItems.find(li => li.symbol === fb.symbol)).slice(0, 6 - liveStockItems.length),
+        ];
+
     return (
         <div className="flex flex-col space-y-8 font-sans">
             <div className="flex flex-col space-y-4">
@@ -302,12 +362,13 @@ export function MarketSummary({ theme }: { theme: 'light' | 'dark' }) {
                 </div>
             </div>
 
-            {/* New Sections: Highest Volume Stocks and Crypto */}
+            {/* New Sections: Highest Volume Stocks (LIVE) and Crypto */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 <MarketList
                     title="Highest volume stocks"
-                    items={HIGHEST_VOLUME_STOCKS}
+                    items={stockItems}
                     footerLabel="See all most actively traded stocks"
+                    isLoading={isLoading && tickerSummaries.length === 0}
                 />
                 <MarketList
                     title="Highest volume crypto"

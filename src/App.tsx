@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   LayoutDashboard,
   BarChart3,
@@ -9,7 +9,8 @@ import {
   UserCircle,
   TrendingUp,
   Sun,
-  Moon
+  Moon,
+  Loader2
 } from 'lucide-react';
 import { Watchlist } from './components/Watchlist';
 import { Portfolio } from './components/Portfolio';
@@ -19,22 +20,44 @@ import { CandlestickChart } from './components/CandlestickChart';
 import { MarketSummary } from './components/MarketSummary';
 import { Asset, Holding, NewsItem } from './types';
 import { cn } from './lib/utils';
+import {
+  fetchAllTickers,
+  toTickerSummary,
+  toOHLCBars,
+  AVAILABLE_TICKERS,
+  TICKER_META,
+  type RawPriceData,
+  type TickerSummary,
+  type OHLCBar,
+} from './services/priceApi';
 
-// Mock Data
-const MOCK_ASSETS: Asset[] = [
+// Static crypto / fund fallbacks (not available from the stock API)
+const STATIC_CRYPTO_ASSETS: Asset[] = [
+  { id: 'crypto-btc', symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 64231.50, change: -1200, changePercent: -1.8 },
+  { id: 'crypto-eth', symbol: 'ETH', name: 'Ethereum', type: 'crypto', price: 3452.10, change: 45, changePercent: 1.3 },
+];
+
+const STATIC_FUND_ASSETS: Asset[] = [
+  { id: 'fund-vti', symbol: 'VTI', name: 'Vanguard Total Stock Market', type: 'fund', price: 254.12, change: 0.8, changePercent: 0.32 },
+];
+
+// Fallback mock data in case the API fails
+const FALLBACK_ASSETS: Asset[] = [
   { id: '1', symbol: 'AAPL', name: 'Apple Inc.', type: 'stock', price: 182.63, change: 1.2, changePercent: 0.65 },
   { id: '2', symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 64231.50, change: -1200, changePercent: -1.8 },
   { id: '3', symbol: 'ETH', name: 'Ethereum', type: 'crypto', price: 3452.10, change: 45, changePercent: 1.3 },
-  { id: '4', symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock', price: 875.28, change: 12.5, changePercent: 1.45 },
+  { id: '4', symbol: 'TSLA', name: 'Tesla, Inc.', type: 'stock', price: 175.43, change: -4.2, changePercent: -2.3 },
   { id: '5', symbol: 'VTI', name: 'Vanguard Total Stock Market', type: 'fund', price: 254.12, change: 0.8, changePercent: 0.32 },
-  { id: '6', symbol: 'TSLA', name: 'Tesla, Inc.', type: 'stock', price: 175.43, change: -4.2, changePercent: -2.3 },
+  { id: '6', symbol: 'AMZN', name: 'Amazon.com, Inc.', type: 'stock', price: 178.25, change: 2.1, changePercent: 1.19 },
 ];
 
-const MOCK_HOLDINGS: Holding[] = [
-  { ...MOCK_ASSETS[0], amount: 10, avgCost: 150, totalValue: 1826.3, profit: 326.3, profitPercent: 21.75 },
-  { ...MOCK_ASSETS[1], amount: 0.05, avgCost: 45000, totalValue: 3211.57, profit: 961.57, profitPercent: 42.7 },
-  { ...MOCK_ASSETS[3], amount: 5, avgCost: 600, totalValue: 4376.4, profit: 1376.4, profitPercent: 45.88 },
-];
+const FALLBACK_CHART_DATA = Array.from({ length: 50 }, (_, i) => ({
+  time: new Date(Date.now() - (50 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  open: 150 + Math.random() * 50,
+  high: 210 + Math.random() * 20,
+  low: 140 + Math.random() * 20,
+  close: 160 + Math.random() * 50,
+}));
 
 const MOCK_NEWS: NewsItem[] = [
   { id: '1', time: '09:30 AM', title: 'Market Open: Tech Stocks Lead Gains', summary: 'Nasdaq opens higher as NVIDIA and Apple show strong momentum in pre-market trading.', impact: 'positive', category: 'Market' },
@@ -43,31 +66,122 @@ const MOCK_NEWS: NewsItem[] = [
   { id: '4', time: '03:00 PM', title: 'Oil Prices Surge on Supply Concerns', summary: 'Global oil benchmarks rise 2% following reports of production cuts.', impact: 'negative', category: 'Commodity' },
 ];
 
-const MOCK_CHART_DATA = Array.from({ length: 50 }, (_, i) => ({
-  time: new Date(Date.now() - (50 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  open: 150 + Math.random() * 50,
-  high: 210 + Math.random() * 20,
-  low: 140 + Math.random() * 20,
-  close: 160 + Math.random() * 50,
-}));
+/**
+ * Convert a TickerSummary to Asset type for use in the watchlist / portfolio
+ */
+function summaryToAsset(s: TickerSummary, index: number): Asset {
+  return {
+    id: `api-${s.ticker}-${index}`,
+    symbol: s.ticker,
+    name: s.name,
+    type: s.type,
+    price: s.latestPrice,
+    change: s.change,
+    changePercent: s.changePercent,
+  };
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'watchlist' | 'news' | 'ai'>('dashboard');
-  const [selectedAsset, setSelectedAsset] = useState<Asset>(MOCK_ASSETS[0]);
+  const [assets, setAssets] = useState<Asset[]>(FALLBACK_ASSETS);
+  const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<Asset>(FALLBACK_ASSETS[0]);
   const [newsData, setNewsData] = useState<NewsItem[]>(MOCK_NEWS);
+  const [chartData, setChartData] = useState<OHLCBar[]>(FALLBACK_CHART_DATA);
+  const [chartDataMap, setChartDataMap] = useState<Map<string, OHLCBar[]>>(new Map());
+  const [tickerSummaries, setTickerSummaries] = useState<TickerSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'dark') || 'dark';
   });
 
+  // Fetch live data from the Portfolio Manager API
   useEffect(() => {
-    // Fetch dynamic news from CryptoCompare (Free, No API Key, CORS Enabled)
+    let cancelled = false;
+
+    async function loadLiveData() {
+      setIsLoading(true);
+      try {
+        const dataMap = await fetchAllTickers();
+        if (cancelled) return;
+
+        // Build summaries and assets from live data
+        const summaries: TickerSummary[] = [];
+        const newChartMap = new Map<string, OHLCBar[]>();
+        const liveAssets: Asset[] = [];
+
+        let idx = 0;
+        for (const ticker of AVAILABLE_TICKERS) {
+          const raw = dataMap.get(ticker);
+          if (raw) {
+            const summary = toTickerSummary(raw);
+            summaries.push(summary);
+            liveAssets.push(summaryToAsset(summary, idx));
+            newChartMap.set(ticker, toOHLCBars(raw));
+            idx++;
+          }
+        }
+
+        // Append crypto / fund assets (not from this API)
+        const allAssets = [...liveAssets, ...STATIC_CRYPTO_ASSETS, ...STATIC_FUND_ASSETS];
+
+        setTickerSummaries(summaries);
+        setChartDataMap(newChartMap);
+        setAssets(allAssets);
+
+        // Build holdings from the first 3 live assets
+        if (liveAssets.length >= 3) {
+          const newHoldings: Holding[] = liveAssets.slice(0, 3).map((a, i) => ({
+            ...a,
+            amount: [10, 5, 3][i],
+            avgCost: a.price * (1 - [0.15, 0.10, 0.08][i]),
+            totalValue: a.price * [10, 5, 3][i],
+            profit: a.price * [10, 5, 3][i] * [0.15, 0.10, 0.08][i],
+            profitPercent: [15, 10, 8][i],
+          }));
+          setHoldings(newHoldings);
+        }
+
+        // Set initial selected asset and chart
+        if (allAssets.length > 0) {
+          setSelectedAsset(allAssets[0]);
+          const firstChart = newChartMap.get(allAssets[0].symbol);
+          if (firstChart) setChartData(firstChart);
+        }
+      } catch (err) {
+        console.error('Failed to load live data from Portfolio Manager API:', err);
+        // Keep fallback data
+        setHoldings([
+          { ...FALLBACK_ASSETS[0], amount: 10, avgCost: 150, totalValue: 1826.3, profit: 326.3, profitPercent: 21.75 },
+          { ...FALLBACK_ASSETS[3], amount: 5, avgCost: 150, totalValue: 877.15, profit: -127.15, profitPercent: -12.67 },
+          { ...FALLBACK_ASSETS[5], amount: 3, avgCost: 160, totalValue: 534.75, profit: 54.75, profitPercent: 11.41 },
+        ]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadLiveData();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Update chart when selected asset changes
+  const handleSelectAsset = useCallback((asset: Asset) => {
+    setSelectedAsset(asset);
+    const assetChart = chartDataMap.get(asset.symbol);
+    if (assetChart) {
+      setChartData(assetChart);
+    }
+  }, [chartDataMap]);
+
+  // Fetch dynamic news from CryptoCompare
+  useEffect(() => {
     fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN')
       .then(res => res.json())
       .then(data => {
         if (data && data.Data) {
           const formattedNews = data.Data.slice(0, 15).map((item: any) => {
-            // Determine impact implicitly from upvotes vs downvotes, or assign neutral
             let impact: 'positive' | 'negative' | 'neutral' = 'neutral';
             if (item.upvotes > item.downvotes + 2) impact = 'positive';
             else if (item.downvotes > item.upvotes + 2) impact = 'negative';
@@ -97,6 +211,12 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+  // Compute the display price/change for the selected asset
+  const selectedSummary = tickerSummaries.find(s => s.ticker === selectedAsset.symbol);
+  const displayPrice = selectedSummary?.latestPrice ?? selectedAsset.price;
+  const displayChange = selectedSummary?.change ?? selectedAsset.change;
+  const displayChangePercent = selectedSummary?.changePercent ?? selectedAsset.changePercent;
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
@@ -135,6 +255,14 @@ export default function App() {
             onClick={() => setActiveTab('ai')}
           />
         </nav>
+
+        {/* Data source badge */}
+        <div className="px-3 pb-4">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-wider opacity-40">
+            <div className={cn("w-1.5 h-1.5 rounded-full", isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400")} />
+            {isLoading ? 'Loading live data...' : 'Live · Portfolio Manager API'}
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}
@@ -177,9 +305,16 @@ export default function App() {
         <div className="flex-1 overflow-hidden flex">
           {activeTab === 'dashboard' && (
             <div className="flex-1 p-8 overflow-y-auto space-y-8">
+              {isLoading && (
+                <div className="flex items-center gap-3 glass-panel p-4 text-sm">
+                  <Loader2 size={16} className="animate-spin text-blue-500" />
+                  <span className="opacity-60">Fetching live data from Portfolio Manager API...</span>
+                </div>
+              )}
+
               <section>
                 <h2 className="text-xs font-mono uppercase opacity-40 mb-4 tracking-widest">Portfolio Overview</h2>
-                <Portfolio holdings={MOCK_HOLDINGS} />
+                <Portfolio holdings={holdings} />
               </section>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -197,15 +332,20 @@ export default function App() {
                       <div className="flex items-center gap-3">
                         <span className="text-xl font-bold">{selectedAsset.symbol}</span>
                         <span className="text-sm opacity-40">{selectedAsset.name}</span>
+                        {!isLoading && tickerSummaries.find(s => s.ticker === selectedAsset.symbol) && (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">LIVE</span>
+                        )}
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-mono">182.63</p>
-                        <p className="text-xs text-green-400 font-mono">+1.25 (0.68%)</p>
+                        <p className="text-lg font-mono">{displayPrice.toFixed(2)}</p>
+                        <p className={cn("text-xs font-mono", displayChange >= 0 ? "text-green-400" : "text-red-400")}>
+                          {displayChange >= 0 ? '+' : ''}{displayChange.toFixed(2)} ({displayChangePercent >= 0 ? '+' : ''}{displayChangePercent.toFixed(2)}%)
+                        </p>
                       </div>
                     </div>
                     <div className="flex-1 min-h-0 relative w-full">
                       <div className="absolute inset-0">
-                        <CandlestickChart data={MOCK_CHART_DATA} containerId="main-chart" theme={theme} />
+                        <CandlestickChart data={chartData} containerId="main-chart" theme={theme} />
                       </div>
                     </div>
                   </div>
@@ -224,7 +364,7 @@ export default function App() {
               </div>
 
               <section>
-                <MarketSummary theme={theme} />
+                <MarketSummary theme={theme} tickerSummaries={tickerSummaries} isLoading={isLoading} />
               </section>
             </div>
           )}
@@ -233,8 +373,8 @@ export default function App() {
             <div className="flex-1 flex overflow-hidden">
               <div className="w-80 border-r border-[var(--border)] glass-panel border-none">
                 <Watchlist
-                  assets={MOCK_ASSETS}
-                  onSelect={setSelectedAsset}
+                  assets={assets}
+                  onSelect={handleSelectAsset}
                   selectedId={selectedAsset.id}
                 />
               </div>
@@ -243,21 +383,24 @@ export default function App() {
                   <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-bold">{selectedAsset.name}</h2>
                     <span className="px-2 py-1 bg-[var(--foreground)]/5 border border-[var(--border)] text-[10px] uppercase font-mono">{selectedAsset.type}</span>
+                    {tickerSummaries.find(s => s.ticker === selectedAsset.symbol) && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">LIVE</span>
+                    )}
                   </div>
                   <button className="glass-button px-6 py-2 text-sm">Trade</button>
                 </div>
                 <div className="glass-panel flex-1 p-6 flex flex-col">
                   <div className="flex-1 min-h-0 relative w-full">
                     <div className="absolute inset-0">
-                      <CandlestickChart data={MOCK_CHART_DATA} containerId="watchlist-chart" theme={theme} />
+                      <CandlestickChart data={chartData} containerId="watchlist-chart" theme={theme} />
                     </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
-                  <StatBox label="Market Cap" value="2.84T" />
-                  <StatBox label="P/E Ratio" value="28.42" />
-                  <StatBox label="Dividend Yield" value="0.52%" />
-                  <StatBox label="52W High" value="199.62" />
+                  <StatBox label="Latest Price" value={`$${displayPrice.toFixed(2)}`} />
+                  <StatBox label="Change" value={`${displayChange >= 0 ? '+' : ''}${displayChangePercent.toFixed(2)}%`} positive={displayChange >= 0} />
+                  <StatBox label="Day High" value={selectedSummary ? `$${selectedSummary.dayHigh.toFixed(2)}` : '—'} />
+                  <StatBox label="Day Low" value={selectedSummary ? `$${selectedSummary.dayLow.toFixed(2)}` : '—'} />
                 </div>
               </div>
             </div>
@@ -309,11 +452,14 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
   );
 }
 
-function StatBox({ label, value }: { label: string, value: string }) {
+function StatBox({ label, value, positive }: { label: string, value: string, positive?: boolean }) {
   return (
     <div className="glass-panel p-4">
       <p className="text-[10px] uppercase opacity-40 font-mono mb-1">{label}</p>
-      <p className="text-lg font-bold tracking-tight">{value}</p>
+      <p className={cn(
+        "text-lg font-bold tracking-tight",
+        positive !== undefined ? (positive ? "text-green-400" : "text-red-400") : ""
+      )}>{value}</p>
     </div>
   );
 }
