@@ -2,17 +2,20 @@ import React from 'react';
 import { Clock, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { NewsItem } from '../types';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface NewsTimelineProps {
   news: NewsItem[];
 }
 
 export const NewsTimeline: React.FC<NewsTimelineProps> = ({ news }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">Market Timeline</h2>
-        <span className="text-[10px] opacity-40 uppercase">Today</span>
+        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">{t('marketTimeline')}</h2>
+        <span className="text-[10px] opacity-40 uppercase">{t('today')}</span>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-6 relative">
         {/* Vertical Line */}

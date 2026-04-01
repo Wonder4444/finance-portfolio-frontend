@@ -100,10 +100,10 @@ export async function getBackendAssets(): Promise<Asset[]> {
  * Fetch user holdings from the backend database for a specific user.
  * We also fetch the asset details to join the data.
  */
-export async function getBackendHoldings(userId: number): Promise<Holding[]> {
-    const response = await fetch(`${BASE_URL}/holdings/user/${userId}`);
+export async function getBackendHoldings(): Promise<Holding[]> {
+    const response = await fetch(`${BASE_URL}/holdings`);
     if (!response.ok) {
-        throw new Error(`Failed to fetch holdings for user ${userId}: ${response.statusText}`);
+        throw new Error(`Failed to fetch holdings: ${response.statusText}`);
     }
     const result: ApiResult<BackendHolding[]> = await response.json();
 

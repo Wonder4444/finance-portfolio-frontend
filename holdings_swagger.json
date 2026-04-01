@@ -1,0 +1,299 @@
+{
+  "/api/holdings/{id}": {
+    "get": {
+      "tags": [
+        "UserHoldingController"
+      ],
+      "summary": "Get user holding by ID",
+      "operationId": "getById_1",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultUserHolding"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        }
+      }
+    },
+    "put": {
+      "tags": [
+        "UserHoldingController"
+      ],
+      "summary": "Update user holding by ID",
+      "operationId": "update_1",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UserHolding"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultUserHolding"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "UserHoldingController"
+      ],
+      "summary": "Delete user holding by ID",
+      "operationId": "delete_1",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/holdings": {
+    "get": {
+      "tags": [
+        "UserHoldingController"
+      ],
+      "summary": "List all user holdings",
+      "operationId": "list_1",
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultListUserHolding"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "UserHoldingController"
+      ],
+      "summary": "Create a new user holding",
+      "operationId": "create_1",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UserHolding"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultUserHolding"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/holdings/user/{userId}": {
+    "get": {
+      "tags": [
+        "UserHoldingController"
+      ],
+      "summary": "List user holdings by user ID",
+      "operationId": "listByUserId",
+      "parameters": [
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultListUserHolding"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/holdings/page": {
+    "get": {
+      "tags": [
+        "UserHoldingController"
+      ],
+      "summary": "Paginate user holdings",
+      "operationId": "page_1",
+      "parameters": [
+        {
+          "name": "current",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "default": 1
+          }
+        },
+        {
+          "name": "size",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "default": 10
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultIPageUserHolding"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiResultVoid"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

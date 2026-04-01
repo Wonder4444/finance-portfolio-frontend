@@ -1,0 +1,46 @@
+{
+    "code":  200,
+    "data":  [
+                 {
+                     "id":  5,
+                     "userId":  2,
+                     "assetId":  6,
+                     "quantity":  4.2000000000,
+                     "avgCost":  2100.0000000000,
+                     "isDeleted":  0,
+                     "createTime":  "2026-03-31T14:45:39",
+                     "updateTime":  "2026-03-31T14:45:39"
+                 },
+                 {
+                     "id":  6,
+                     "userId":  3,
+                     "assetId":  3,
+                     "quantity":  50.0000000000,
+                     "avgCost":  205.5000000000,
+                     "isDeleted":  0,
+                     "createTime":  "2026-03-31T14:45:39",
+                     "updateTime":  "2026-03-31T14:45:39"
+                 },
+                 {
+                     "id":  7,
+                     "userId":  3,
+                     "assetId":  5,
+                     "quantity":  1.2500000000,
+                     "avgCost":  68000.0000000000,
+                     "isDeleted":  0,
+                     "createTime":  "2026-03-31T14:45:39",
+                     "updateTime":  "2026-03-31T14:45:39"
+                 },
+                 {
+                     "id":  8,
+                     "userId":  4,
+                     "assetId":  6,
+                     "quantity":  12.0000000000,
+                     "avgCost":  3100.0000000000,
+                     "isDeleted":  0,
+                     "createTime":  "2026-03-31T14:45:39",
+                     "updateTime":  "2026-03-31T14:45:39"
+                 }
+             ],
+    "message":  "success"
+}

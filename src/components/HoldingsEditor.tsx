@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     TrendingUp,
     Trash2,
@@ -13,9 +13,10 @@ import {
     PlusCircle,
     MinusCircle
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Asset, Holding } from '../types';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
-import { addHolding, updateHolding, deleteHolding } from '../services/backendApi';
+import { addHolding, updateHolding, deleteHolding, getBackendAssets } from '../services/backendApi';
 
 interface HoldingsEditorProps {
     assets: Asset[];
@@ -25,6 +26,7 @@ interface HoldingsEditorProps {
 }
 
 export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: HoldingsEditorProps) {
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     const [selectedAssetId, setSelectedAssetId] = useState('');
@@ -49,13 +51,22 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
         localStorage.setItem('pinnedHoldings', JSON.stringify(newPinned));
     };
 
+    const [allAssets, setAllAssets] = useState<Asset[]>([]);
+
+    useEffect(() => {
+        if (isAdding && allAssets.length === 0) {
+            getBackendAssets().then(setAllAssets).catch(console.error);
+        }
+    }, [isAdding, allAssets.length]);
+
     const filteredAssets = useMemo(() => {
         if (!searchQuery) return [];
-        return assets.filter(a =>
+        const sourceAssets = allAssets.length > 0 ? allAssets : assets;
+        return sourceAssets.filter(a =>
             a.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
             a.name.toLowerCase().includes(searchQuery.toLowerCase())
         ).slice(0, 5);
-    }, [assets, searchQuery]);
+    }, [assets, allAssets, searchQuery]);
 
     const sortedHoldings = useMemo(() => {
         return [...holdings].sort((a, b) => {
@@ -75,7 +86,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
         try {
             // Backend asset ID is like 'backend-1', we need the number
             const assetId = parseInt(selectedAssetId.replace('backend-', ''));
-            const success = await addHolding(1, assetId, quantity, avgCost);
+            const success = await addHolding(2, assetId, quantity, avgCost);
             if (success) {
                 setIsAdding(false);
                 setSearchQuery('');
@@ -108,7 +119,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
     };
 
     const handleDelete = async (holdingId: string) => {
-        if (!confirm('Are you sure you want to remove this holding?')) return;
+        if (!confirm(t('confirmDelete'))) return;
 
         setIsSubmitting(true);
         try {
@@ -134,7 +145,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
         <div className="flex-1 p-8 overflow-y-auto space-y-8 max-w-6xl mx-auto w-full">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                    <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">Manage Holdings</h2>
+                    <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">{t('manageHoldings')}</h2>
                     <p className="text-sm opacity-40 font-mono">Increase, decrease, or restructure your portfolio.</p>
                 </div>
                 <button
@@ -145,7 +156,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
                     )}
                 >
                     {isAdding ? <X size={16} /> : <Plus size={16} />}
-                    {isAdding ? 'Cancel' : 'Add Position'}
+                    {isAdding ? t('cancel') : t('addPosition')}
                 </button>
             </div>
 
@@ -154,14 +165,14 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
                     <form onSubmit={handleAddSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-2">
-                                <label className="text-[10px] uppercase opacity-40 font-mono tracking-widest block">Select Asset</label>
+                                <label className="text-[10px] uppercase opacity-40 font-mono tracking-widest block">{t('selectAsset')}</label>
                                 <div className="relative z-30">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" size={16} />
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search symbol or name..."
+                                        placeholder={t('searchPlaceholder')}
                                         className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] p-3 pl-10 text-sm focus:outline-none focus:border-blue-500/50"
                                     />
                                     {filteredAssets.length > 0 && (
@@ -194,7 +205,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase opacity-40 font-mono tracking-widest block">Quantity</label>
+                                    <label className="text-[10px] uppercase opacity-40 font-mono tracking-widest block">{t('quantity')}</label>
                                     <input
                                         type="number"
                                         step="0.000001"
@@ -206,7 +217,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase opacity-40 font-mono tracking-widest block">Avg Cost (USD)</label>
+                                    <label className="text-[10px] uppercase opacity-40 font-mono tracking-widest block">{t('avgCost')} (USD)</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -227,7 +238,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
                                 className="bg-blue-600 text-white px-8 py-3 text-xs font-bold tracking-widest uppercase hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 transition-all shadow-lg shadow-blue-600/10"
                             >
                                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <TrendingUp size={16} />}
-                                Establish Position
+                                {t('establishPosition')}
                             </button>
                         </div>
                     </form>
@@ -235,17 +246,17 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
             )}
 
             <div className="space-y-4">
-                <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">Active Holdings ({holdings.length})</h2>
+                <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{t('activeHoldings')} ({holdings.length})</h2>
                 <div className="glass-panel overflow-hidden">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-[var(--foreground)]/5 border-b border-[var(--border)]">
                             <tr className="font-mono text-[10px] uppercase opacity-40">
-                                <th className="p-4 pl-8">Asset</th>
-                                <th className="p-4">Quantity</th>
-                                <th className="p-4">Avg Cost</th>
-                                <th className="p-4">Current Price</th>
-                                <th className="p-4">PnL / Yield</th>
-                                <th className="p-4 pr-8 text-right">Actions</th>
+                                <th className="p-4 pl-8">{t('asset')}</th>
+                                <th className="p-4">{t('quantity')}</th>
+                                <th className="p-4">{t('avgCost')}</th>
+                                <th className="p-4">{t('currentPrice')}</th>
+                                <th className="p-4">{t('pnlYield')}</th>
+                                <th className="p-4 pr-8 text-right">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border)]/10">
@@ -258,7 +269,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
                             ) : holdings.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="p-12 text-center opacity-30 italic font-mono text-xs">
-                                        No active positions found in database.
+                                        {t('noActivePositions')}
                                     </td>
                                 </tr>
                             ) : sortedHoldings.map((h) => (
@@ -377,15 +388,15 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
                     <div className="p-6 bg-[var(--foreground)]/5 border-t border-[var(--border)]">
                         <div className="flex items-center gap-6 justify-end text-xs font-mono">
                             <div className="flex flex-col items-end">
-                                <span className="opacity-40 uppercase text-[10px]">Total Equity</span>
+                                <span className="opacity-40 uppercase text-[10px]">{t('totalEquity')}</span>
                                 <span className="font-bold text-lg">{formatCurrency(holdings.reduce((acc, h) => acc + h.totalValue, 0))}</span>
                             </div>
                             <div className="flex flex-col items-end">
-                                <span className="opacity-40 uppercase text-[10px]">Total Cost</span>
+                                <span className="opacity-40 uppercase text-[10px]">{t('totalCost')}</span>
                                 <span className="font-bold text-lg opacity-60">{formatCurrency(holdings.reduce((acc, h) => acc + (h.avgCost * h.amount), 0))}</span>
                             </div>
                             <div className="flex flex-col items-end">
-                                <span className="opacity-40 uppercase text-[10px]">Overall P/L</span>
+                                <span className="opacity-40 uppercase text-[10px]">{t('overallPL')}</span>
                                 {(() => {
                                     const value = holdings.reduce((acc, h) => acc + h.totalValue, 0);
                                     const cost = holdings.reduce((acc, h) => acc + (h.avgCost * h.amount), 0);

@@ -2,6 +2,7 @@ import React from 'react';
 import { Asset } from '../types';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
 import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface WatchlistProps {
   assets: Asset[];
@@ -20,12 +21,14 @@ export const Watchlist: React.FC<WatchlistProps> = ({
   totalPages = 1,
   onPageChange
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">Watchlist</h2>
+        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">{t('watchlist')}</h2>
         <div className="flex gap-2">
-          <button className="text-[10px] opacity-40 hover:opacity-100 transition-opacity uppercase font-mono">Page {currentPage}/{totalPages}</button>
+          <button className="text-[10px] opacity-40 hover:opacity-100 transition-opacity uppercase font-mono">{t('page')} {currentPage}/{totalPages}</button>
           <button className="text-[10px] opacity-40 hover:opacity-100 transition-opacity uppercase">+</button>
         </div>
       </div>

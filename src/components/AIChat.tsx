@@ -4,12 +4,15 @@ import ReactMarkdown from 'react-markdown';
 import { chatWithAI } from '../lib/gemini';
 import { ChatMessage } from '../types';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export const AIChat: React.FC = () => {
+  const { t, i18n } = useTranslation();
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: 'Hello! I am your WealthWise assistant. How can I help you with your investments today?',
+      content: t('aiGreeting'),
       timestamp: new Date(),
     },
   ]);
@@ -33,7 +36,7 @@ export const AIChat: React.FC = () => {
 
     const assistantMsg: ChatMessage = {
       role: 'assistant',
-      content: response || 'I am sorry, I could not process that.',
+      content: response || t('aiError'),
       timestamp: new Date(),
     };
 
@@ -45,7 +48,7 @@ export const AIChat: React.FC = () => {
     <div className="flex flex-col h-full glass-panel border-none">
       <div className="p-4 border-b border-[var(--border)] flex items-center gap-2">
         <Bot size={20} className="text-blue-400" />
-        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">AI Advisor</h2>
+        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">{t('aiAdvisor')}</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -80,7 +83,7 @@ export const AIChat: React.FC = () => {
             <div className="w-8 h-8 flex items-center justify-center shrink-0 bg-blue-500/20">
               <Loader2 size={16} className="text-blue-400 animate-spin" />
             </div>
-            <div className="p-3 text-sm bg-[var(--foreground)]/5 animate-pulse">Thinking...</div>
+            <div className="p-3 text-sm bg-[var(--foreground)]/5 animate-pulse">{t('aiThinking')}</div>
           </div>
         )}
       </div>
@@ -92,7 +95,7 @@ export const AIChat: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about your portfolio..."
+            placeholder={t('askAIPlaceholder')}
             className="flex-1 bg-[var(--foreground)]/5 border border-[var(--border)] p-2 text-sm focus:outline-none focus:border-blue-500/50"
           />
           <button

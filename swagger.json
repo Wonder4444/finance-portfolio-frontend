@@ -1,0 +1,1580 @@
+{
+    "openapi":  "3.1.0",
+    "info":  {
+                 "title":  "Finance Portfolio Backend API",
+                 "description":  "API documentation for the Finance Portfolio Backend application.",
+                 "version":  "1.0.0"
+             },
+    "servers":  [
+                    {
+                        "url":  "http://localhost:8080/finance-portfolio",
+                        "description":  "Generated server url"
+                    }
+                ],
+    "tags":  [
+                 {
+                     "name":  "UserWatchlistController",
+                     "description":  "Watchlist / Favorites api for frontend dashboard"
+                 },
+                 {
+                     "name":  "AssetInfoController",
+                     "description":  "Assets related api"
+                 },
+                 {
+                     "name":  "UserInfoController",
+                     "description":  "User information related api"
+                 },
+                 {
+                     "name":  "Portfolio Overview APIs",
+                     "description":  "Endpoints for portfolio overview metrics (Balance, Profit, Return Rate)"
+                 },
+                 {
+                     "name":  "UserHoldingController",
+                     "description":  "User holdings related api"
+                 }
+             ],
+    "paths":  {
+                  "/api/users/{id}":  {
+                                          "get":  {
+                                                      "tags":  [
+                                                                   "UserInfoController"
+                                                               ],
+                                                      "summary":  "Get user by ID",
+                                                      "operationId":  "getById",
+                                                      "parameters":  [
+                                                                         {
+                                                                             "name":  "id",
+                                                                             "in":  "path",
+                                                                             "required":  true,
+                                                                             "schema":  {
+                                                                                            "type":  "integer",
+                                                                                            "format":  "int64"
+                                                                                        }
+                                                                         }
+                                                                     ],
+                                                      "responses":  {
+                                                                        "500":  {
+                                                                                    "description":  "Internal Server Error",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                        "200":  {
+                                                                                    "description":  "OK",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultUserInfo"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                }
+                                                                    }
+                                                  },
+                                          "put":  {
+                                                      "tags":  [
+                                                                   "UserInfoController"
+                                                               ],
+                                                      "summary":  "Update user by ID",
+                                                      "operationId":  "update",
+                                                      "parameters":  [
+                                                                         {
+                                                                             "name":  "id",
+                                                                             "in":  "path",
+                                                                             "required":  true,
+                                                                             "schema":  {
+                                                                                            "type":  "integer",
+                                                                                            "format":  "int64"
+                                                                                        }
+                                                                         }
+                                                                     ],
+                                                      "requestBody":  {
+                                                                          "content":  {
+                                                                                          "application/json":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/UserInfo"
+                                                                                                                              }
+                                                                                                               }
+                                                                                      },
+                                                                          "required":  true
+                                                                      },
+                                                      "responses":  {
+                                                                        "500":  {
+                                                                                    "description":  "Internal Server Error",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                        "200":  {
+                                                                                    "description":  "OK",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultUserInfo"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                }
+                                                                    }
+                                                  },
+                                          "delete":  {
+                                                         "tags":  [
+                                                                      "UserInfoController"
+                                                                  ],
+                                                         "summary":  "Delete user by ID",
+                                                         "operationId":  "delete",
+                                                         "parameters":  [
+                                                                            {
+                                                                                "name":  "id",
+                                                                                "in":  "path",
+                                                                                "required":  true,
+                                                                                "schema":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64"
+                                                                                           }
+                                                                            }
+                                                                        ],
+                                                         "responses":  {
+                                                                           "500":  {
+                                                                                       "description":  "Internal Server Error",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   },
+                                                                           "200":  {
+                                                                                       "description":  "OK",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   }
+                                                                       }
+                                                     }
+                                      },
+                  "/api/holdings/{id}":  {
+                                             "get":  {
+                                                         "tags":  [
+                                                                      "UserHoldingController"
+                                                                  ],
+                                                         "summary":  "Get user holding by ID",
+                                                         "operationId":  "getById_1",
+                                                         "parameters":  [
+                                                                            {
+                                                                                "name":  "id",
+                                                                                "in":  "path",
+                                                                                "required":  true,
+                                                                                "schema":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64"
+                                                                                           }
+                                                                            }
+                                                                        ],
+                                                         "responses":  {
+                                                                           "500":  {
+                                                                                       "description":  "Internal Server Error",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   },
+                                                                           "200":  {
+                                                                                       "description":  "OK",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultUserHolding"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   }
+                                                                       }
+                                                     },
+                                             "put":  {
+                                                         "tags":  [
+                                                                      "UserHoldingController"
+                                                                  ],
+                                                         "summary":  "Update user holding by ID",
+                                                         "operationId":  "update_1",
+                                                         "parameters":  [
+                                                                            {
+                                                                                "name":  "id",
+                                                                                "in":  "path",
+                                                                                "required":  true,
+                                                                                "schema":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64"
+                                                                                           }
+                                                                            }
+                                                                        ],
+                                                         "requestBody":  {
+                                                                             "content":  {
+                                                                                             "application/json":  {
+                                                                                                                      "schema":  {
+                                                                                                                                     "$ref":  "#/components/schemas/UserHolding"
+                                                                                                                                 }
+                                                                                                                  }
+                                                                                         },
+                                                                             "required":  true
+                                                                         },
+                                                         "responses":  {
+                                                                           "500":  {
+                                                                                       "description":  "Internal Server Error",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   },
+                                                                           "200":  {
+                                                                                       "description":  "OK",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultUserHolding"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   }
+                                                                       }
+                                                     },
+                                             "delete":  {
+                                                            "tags":  [
+                                                                         "UserHoldingController"
+                                                                     ],
+                                                            "summary":  "Delete user holding by ID",
+                                                            "operationId":  "delete_1",
+                                                            "parameters":  [
+                                                                               {
+                                                                                   "name":  "id",
+                                                                                   "in":  "path",
+                                                                                   "required":  true,
+                                                                                   "schema":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "format":  "int64"
+                                                                                              }
+                                                                               }
+                                                                           ],
+                                                            "responses":  {
+                                                                              "500":  {
+                                                                                          "description":  "Internal Server Error",
+                                                                                          "content":  {
+                                                                                                          "*/*":  {
+                                                                                                                      "schema":  {
+                                                                                                                                     "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                                 }
+                                                                                                                  }
+                                                                                                      }
+                                                                                      },
+                                                                              "200":  {
+                                                                                          "description":  "OK",
+                                                                                          "content":  {
+                                                                                                          "*/*":  {
+                                                                                                                      "schema":  {
+                                                                                                                                     "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                                 }
+                                                                                                                  }
+                                                                                                      }
+                                                                                      }
+                                                                          }
+                                                        }
+                                         },
+                  "/api/assets/{id}":  {
+                                           "get":  {
+                                                       "tags":  [
+                                                                    "AssetInfoController"
+                                                                ],
+                                                       "summary":  "Get asset by ID",
+                                                       "operationId":  "getById_2",
+                                                       "parameters":  [
+                                                                          {
+                                                                              "name":  "id",
+                                                                              "in":  "path",
+                                                                              "required":  true,
+                                                                              "schema":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int64"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                       "responses":  {
+                                                                         "500":  {
+                                                                                     "description":  "Internal Server Error",
+                                                                                     "content":  {
+                                                                                                     "*/*":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                            }
+                                                                                                             }
+                                                                                                 }
+                                                                                 },
+                                                                         "200":  {
+                                                                                     "description":  "OK",
+                                                                                     "content":  {
+                                                                                                     "*/*":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "$ref":  "#/components/schemas/ApiResultAssetInfo"
+                                                                                                                            }
+                                                                                                             }
+                                                                                                 }
+                                                                                 }
+                                                                     }
+                                                   },
+                                           "put":  {
+                                                       "tags":  [
+                                                                    "AssetInfoController"
+                                                                ],
+                                                       "summary":  "Update asset by ID",
+                                                       "operationId":  "update_2",
+                                                       "parameters":  [
+                                                                          {
+                                                                              "name":  "id",
+                                                                              "in":  "path",
+                                                                              "required":  true,
+                                                                              "schema":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int64"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                       "requestBody":  {
+                                                                           "content":  {
+                                                                                           "application/json":  {
+                                                                                                                    "schema":  {
+                                                                                                                                   "$ref":  "#/components/schemas/AssetInfo"
+                                                                                                                               }
+                                                                                                                }
+                                                                                       },
+                                                                           "required":  true
+                                                                       },
+                                                       "responses":  {
+                                                                         "500":  {
+                                                                                     "description":  "Internal Server Error",
+                                                                                     "content":  {
+                                                                                                     "*/*":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                            }
+                                                                                                             }
+                                                                                                 }
+                                                                                 },
+                                                                         "200":  {
+                                                                                     "description":  "OK",
+                                                                                     "content":  {
+                                                                                                     "*/*":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "$ref":  "#/components/schemas/ApiResultAssetInfo"
+                                                                                                                            }
+                                                                                                             }
+                                                                                                 }
+                                                                                 }
+                                                                     }
+                                                   },
+                                           "delete":  {
+                                                          "tags":  [
+                                                                       "AssetInfoController"
+                                                                   ],
+                                                          "summary":  "Delete asset by ID",
+                                                          "operationId":  "delete_2",
+                                                          "parameters":  [
+                                                                             {
+                                                                                 "name":  "id",
+                                                                                 "in":  "path",
+                                                                                 "required":  true,
+                                                                                 "schema":  {
+                                                                                                "type":  "integer",
+                                                                                                "format":  "int64"
+                                                                                            }
+                                                                             }
+                                                                         ],
+                                                          "responses":  {
+                                                                            "500":  {
+                                                                                        "description":  "Internal Server Error",
+                                                                                        "content":  {
+                                                                                                        "*/*":  {
+                                                                                                                    "schema":  {
+                                                                                                                                   "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                               }
+                                                                                                                }
+                                                                                                    }
+                                                                                    },
+                                                                            "200":  {
+                                                                                        "description":  "OK",
+                                                                                        "content":  {
+                                                                                                        "*/*":  {
+                                                                                                                    "schema":  {
+                                                                                                                                   "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                               }
+                                                                                                                }
+                                                                                                    }
+                                                                                    }
+                                                                        }
+                                                      }
+                                       },
+                  "/api/watchlist":  {
+                                         "post":  {
+                                                      "tags":  [
+                                                                   "UserWatchlistController"
+                                                               ],
+                                                      "summary":  "Add an asset to user\u0027s watchlist",
+                                                      "operationId":  "add",
+                                                      "parameters":  [
+                                                                         {
+                                                                             "name":  "userId",
+                                                                             "in":  "query",
+                                                                             "required":  true,
+                                                                             "schema":  {
+                                                                                            "type":  "integer",
+                                                                                            "format":  "int64"
+                                                                                        }
+                                                                         },
+                                                                         {
+                                                                             "name":  "assetId",
+                                                                             "in":  "query",
+                                                                             "required":  true,
+                                                                             "schema":  {
+                                                                                            "type":  "integer",
+                                                                                            "format":  "int64"
+                                                                                        }
+                                                                         }
+                                                                     ],
+                                                      "responses":  {
+                                                                        "500":  {
+                                                                                    "description":  "Internal Server Error",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                        "200":  {
+                                                                                    "description":  "OK",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultUserWatchlist"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                }
+                                                                    }
+                                                  }
+                                     },
+                  "/api/users":  {
+                                     "get":  {
+                                                 "tags":  [
+                                                              "UserInfoController"
+                                                          ],
+                                                 "summary":  "List all users",
+                                                 "operationId":  "list",
+                                                 "responses":  {
+                                                                   "500":  {
+                                                                               "description":  "Internal Server Error",
+                                                                               "content":  {
+                                                                                               "*/*":  {
+                                                                                                           "schema":  {
+                                                                                                                          "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                      }
+                                                                                                       }
+                                                                                           }
+                                                                           },
+                                                                   "200":  {
+                                                                               "description":  "OK",
+                                                                               "content":  {
+                                                                                               "*/*":  {
+                                                                                                           "schema":  {
+                                                                                                                          "$ref":  "#/components/schemas/ApiResultListUserInfo"
+                                                                                                                      }
+                                                                                                       }
+                                                                                           }
+                                                                           }
+                                                               }
+                                             },
+                                     "post":  {
+                                                  "tags":  [
+                                                               "UserInfoController"
+                                                           ],
+                                                  "summary":  "Create a new user",
+                                                  "operationId":  "create",
+                                                  "requestBody":  {
+                                                                      "content":  {
+                                                                                      "application/json":  {
+                                                                                                               "schema":  {
+                                                                                                                              "$ref":  "#/components/schemas/UserInfo"
+                                                                                                                          }
+                                                                                                           }
+                                                                                  },
+                                                                      "required":  true
+                                                                  },
+                                                  "responses":  {
+                                                                    "500":  {
+                                                                                "description":  "Internal Server Error",
+                                                                                "content":  {
+                                                                                                "*/*":  {
+                                                                                                            "schema":  {
+                                                                                                                           "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                       }
+                                                                                                        }
+                                                                                            }
+                                                                            },
+                                                                    "200":  {
+                                                                                "description":  "OK",
+                                                                                "content":  {
+                                                                                                "*/*":  {
+                                                                                                            "schema":  {
+                                                                                                                           "$ref":  "#/components/schemas/ApiResultUserInfo"
+                                                                                                                       }
+                                                                                                        }
+                                                                                            }
+                                                                            }
+                                                                }
+                                              }
+                                 },
+                  "/api/holdings":  {
+                                        "get":  {
+                                                    "tags":  [
+                                                                 "UserHoldingController"
+                                                             ],
+                                                    "summary":  "List all user holdings",
+                                                    "operationId":  "list_1",
+                                                    "responses":  {
+                                                                      "500":  {
+                                                                                  "description":  "Internal Server Error",
+                                                                                  "content":  {
+                                                                                                  "*/*":  {
+                                                                                                              "schema":  {
+                                                                                                                             "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                         }
+                                                                                                          }
+                                                                                              }
+                                                                              },
+                                                                      "200":  {
+                                                                                  "description":  "OK",
+                                                                                  "content":  {
+                                                                                                  "*/*":  {
+                                                                                                              "schema":  {
+                                                                                                                             "$ref":  "#/components/schemas/ApiResultListUserHolding"
+                                                                                                                         }
+                                                                                                          }
+                                                                                              }
+                                                                              }
+                                                                  }
+                                                },
+                                        "post":  {
+                                                     "tags":  [
+                                                                  "UserHoldingController"
+                                                              ],
+                                                     "summary":  "Create a new user holding",
+                                                     "operationId":  "create_1",
+                                                     "requestBody":  {
+                                                                         "content":  {
+                                                                                         "application/json":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/UserHolding"
+                                                                                                                             }
+                                                                                                              }
+                                                                                     },
+                                                                         "required":  true
+                                                                     },
+                                                     "responses":  {
+                                                                       "500":  {
+                                                                                   "description":  "Internal Server Error",
+                                                                                   "content":  {
+                                                                                                   "*/*":  {
+                                                                                                               "schema":  {
+                                                                                                                              "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                          }
+                                                                                                           }
+                                                                                               }
+                                                                               },
+                                                                       "200":  {
+                                                                                   "description":  "OK",
+                                                                                   "content":  {
+                                                                                                   "*/*":  {
+                                                                                                               "schema":  {
+                                                                                                                              "$ref":  "#/components/schemas/ApiResultUserHolding"
+                                                                                                                          }
+                                                                                                           }
+                                                                                               }
+                                                                               }
+                                                                   }
+                                                 }
+                                    },
+                  "/api/assets":  {
+                                      "get":  {
+                                                  "tags":  [
+                                                               "AssetInfoController"
+                                                           ],
+                                                  "summary":  "List all assets",
+                                                  "operationId":  "list_2",
+                                                  "responses":  {
+                                                                    "500":  {
+                                                                                "description":  "Internal Server Error",
+                                                                                "content":  {
+                                                                                                "*/*":  {
+                                                                                                            "schema":  {
+                                                                                                                           "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                       }
+                                                                                                        }
+                                                                                            }
+                                                                            },
+                                                                    "200":  {
+                                                                                "description":  "OK",
+                                                                                "content":  {
+                                                                                                "*/*":  {
+                                                                                                            "schema":  {
+                                                                                                                           "$ref":  "#/components/schemas/ApiResultListAssetInfo"
+                                                                                                                       }
+                                                                                                        }
+                                                                                            }
+                                                                            }
+                                                                }
+                                              },
+                                      "post":  {
+                                                   "tags":  [
+                                                                "AssetInfoController"
+                                                            ],
+                                                   "summary":  "Create a new asset",
+                                                   "operationId":  "create_2",
+                                                   "requestBody":  {
+                                                                       "content":  {
+                                                                                       "application/json":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/AssetInfo"
+                                                                                                                           }
+                                                                                                            }
+                                                                                   },
+                                                                       "required":  true
+                                                                   },
+                                                   "responses":  {
+                                                                     "500":  {
+                                                                                 "description":  "Internal Server Error",
+                                                                                 "content":  {
+                                                                                                 "*/*":  {
+                                                                                                             "schema":  {
+                                                                                                                            "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                        }
+                                                                                                         }
+                                                                                             }
+                                                                             },
+                                                                     "200":  {
+                                                                                 "description":  "OK",
+                                                                                 "content":  {
+                                                                                                 "*/*":  {
+                                                                                                             "schema":  {
+                                                                                                                            "$ref":  "#/components/schemas/ApiResultAssetInfo"
+                                                                                                                        }
+                                                                                                         }
+                                                                                             }
+                                                                             }
+                                                                 }
+                                               }
+                                  },
+                  "/api/assets/sync":  {
+                                           "post":  {
+                                                        "tags":  [
+                                                                     "AssetInfoController"
+                                                                 ],
+                                                        "summary":  "Manually trigger the asset sync task",
+                                                        "operationId":  "triggerManualSync",
+                                                        "responses":  {
+                                                                          "500":  {
+                                                                                      "description":  "Internal Server Error",
+                                                                                      "content":  {
+                                                                                                      "*/*":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                             }
+                                                                                                              }
+                                                                                                  }
+                                                                                  },
+                                                                          "200":  {
+                                                                                      "description":  "OK",
+                                                                                      "content":  {
+                                                                                                      "*/*":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                             }
+                                                                                                              }
+                                                                                                  }
+                                                                                  }
+                                                                      }
+                                                    }
+                                       },
+                  "/api/watchlist/user/{userId}":  {
+                                                       "get":  {
+                                                                   "tags":  [
+                                                                                "UserWatchlistController"
+                                                                            ],
+                                                                   "summary":  "Get user\u0027s watchlist with optional fuzzy search by symbol or name",
+                                                                   "operationId":  "getUserWatchlist",
+                                                                   "parameters":  [
+                                                                                      {
+                                                                                          "name":  "userId",
+                                                                                          "in":  "path",
+                                                                                          "required":  true,
+                                                                                          "schema":  {
+                                                                                                         "type":  "integer",
+                                                                                                         "format":  "int64"
+                                                                                                     }
+                                                                                      },
+                                                                                      {
+                                                                                          "name":  "keyword",
+                                                                                          "in":  "query",
+                                                                                          "required":  false,
+                                                                                          "schema":  {
+                                                                                                         "type":  "string"
+                                                                                                     }
+                                                                                      }
+                                                                                  ],
+                                                                   "responses":  {
+                                                                                     "500":  {
+                                                                                                 "description":  "Internal Server Error",
+                                                                                                 "content":  {
+                                                                                                                 "*/*":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                             }
+                                                                                             },
+                                                                                     "200":  {
+                                                                                                 "description":  "OK",
+                                                                                                 "content":  {
+                                                                                                                 "*/*":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "$ref":  "#/components/schemas/ApiResultListUserWatchlistVO"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                             }
+                                                                                             }
+                                                                                 }
+                                                               }
+                                                   },
+                  "/api/users/page":  {
+                                          "get":  {
+                                                      "tags":  [
+                                                                   "UserInfoController"
+                                                               ],
+                                                      "summary":  "Paginate users",
+                                                      "operationId":  "page",
+                                                      "parameters":  [
+                                                                         {
+                                                                             "name":  "current",
+                                                                             "in":  "query",
+                                                                             "required":  false,
+                                                                             "schema":  {
+                                                                                            "type":  "integer",
+                                                                                            "format":  "int64",
+                                                                                            "default":  1
+                                                                                        }
+                                                                         },
+                                                                         {
+                                                                             "name":  "size",
+                                                                             "in":  "query",
+                                                                             "required":  false,
+                                                                             "schema":  {
+                                                                                            "type":  "integer",
+                                                                                            "format":  "int64",
+                                                                                            "default":  10
+                                                                                        }
+                                                                         }
+                                                                     ],
+                                                      "responses":  {
+                                                                        "500":  {
+                                                                                    "description":  "Internal Server Error",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                        "200":  {
+                                                                                    "description":  "OK",
+                                                                                    "content":  {
+                                                                                                    "*/*":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/ApiResultIPageUserInfo"
+                                                                                                                           }
+                                                                                                            }
+                                                                                                }
+                                                                                }
+                                                                    }
+                                                  }
+                                      },
+                  "/api/overview/{userId}":  {
+                                                 "get":  {
+                                                             "tags":  [
+                                                                          "Portfolio Overview APIs"
+                                                                      ],
+                                                             "summary":  "Get User Portfolio Overview",
+                                                             "description":  "Calculates and returns total balance, total profit/loss, and return rate based on the user\u0027s holdings.",
+                                                             "operationId":  "getOverview",
+                                                             "parameters":  [
+                                                                                {
+                                                                                    "name":  "userId",
+                                                                                    "in":  "path",
+                                                                                    "description":  "User ID",
+                                                                                    "required":  true,
+                                                                                    "schema":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "format":  "int64"
+                                                                                               }
+                                                                                }
+                                                                            ],
+                                                             "responses":  {
+                                                                               "500":  {
+                                                                                           "description":  "Internal Server Error",
+                                                                                           "content":  {
+                                                                                                           "*/*":  {
+                                                                                                                       "schema":  {
+                                                                                                                                      "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                                  }
+                                                                                                                   }
+                                                                                                       }
+                                                                                       },
+                                                                               "200":  {
+                                                                                           "description":  "OK",
+                                                                                           "content":  {
+                                                                                                           "*/*":  {
+                                                                                                                       "schema":  {
+                                                                                                                                      "$ref":  "#/components/schemas/ApiResultPortfolioOverviewVO"
+                                                                                                                                  }
+                                                                                                                   }
+                                                                                                       }
+                                                                                       }
+                                                                           }
+                                                         }
+                                             },
+                  "/api/holdings/user/{userId}":  {
+                                                      "get":  {
+                                                                  "tags":  [
+                                                                               "UserHoldingController"
+                                                                           ],
+                                                                  "summary":  "List user holdings by user ID",
+                                                                  "operationId":  "listByUserId",
+                                                                  "parameters":  [
+                                                                                     {
+                                                                                         "name":  "userId",
+                                                                                         "in":  "path",
+                                                                                         "required":  true,
+                                                                                         "schema":  {
+                                                                                                        "type":  "integer",
+                                                                                                        "format":  "int64"
+                                                                                                    }
+                                                                                     }
+                                                                                 ],
+                                                                  "responses":  {
+                                                                                    "500":  {
+                                                                                                "description":  "Internal Server Error",
+                                                                                                "content":  {
+                                                                                                                "*/*":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                                       }
+                                                                                                                        }
+                                                                                                            }
+                                                                                            },
+                                                                                    "200":  {
+                                                                                                "description":  "OK",
+                                                                                                "content":  {
+                                                                                                                "*/*":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/ApiResultListUserHolding"
+                                                                                                                                       }
+                                                                                                                        }
+                                                                                                            }
+                                                                                            }
+                                                                                }
+                                                              }
+                                                  },
+                  "/api/holdings/page":  {
+                                             "get":  {
+                                                         "tags":  [
+                                                                      "UserHoldingController"
+                                                                  ],
+                                                         "summary":  "Paginate user holdings",
+                                                         "operationId":  "page_1",
+                                                         "parameters":  [
+                                                                            {
+                                                                                "name":  "current",
+                                                                                "in":  "query",
+                                                                                "required":  false,
+                                                                                "schema":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64",
+                                                                                               "default":  1
+                                                                                           }
+                                                                            },
+                                                                            {
+                                                                                "name":  "size",
+                                                                                "in":  "query",
+                                                                                "required":  false,
+                                                                                "schema":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64",
+                                                                                               "default":  10
+                                                                                           }
+                                                                            }
+                                                                        ],
+                                                         "responses":  {
+                                                                           "500":  {
+                                                                                       "description":  "Internal Server Error",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   },
+                                                                           "200":  {
+                                                                                       "description":  "OK",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultIPageUserHolding"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   }
+                                                                       }
+                                                     }
+                                         },
+                  "/api/assets/search":  {
+                                             "get":  {
+                                                         "tags":  [
+                                                                      "AssetInfoController"
+                                                                  ],
+                                                         "summary":  "Fuzzy search assets globally by symbol or full name (capped at 50 results)",
+                                                         "operationId":  "search",
+                                                         "parameters":  [
+                                                                            {
+                                                                                "name":  "keyword",
+                                                                                "in":  "query",
+                                                                                "required":  true,
+                                                                                "schema":  {
+                                                                                               "type":  "string"
+                                                                                           }
+                                                                            }
+                                                                        ],
+                                                         "responses":  {
+                                                                           "500":  {
+                                                                                       "description":  "Internal Server Error",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   },
+                                                                           "200":  {
+                                                                                       "description":  "OK",
+                                                                                       "content":  {
+                                                                                                       "*/*":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/ApiResultListAssetInfo"
+                                                                                                                              }
+                                                                                                               }
+                                                                                                   }
+                                                                                   }
+                                                                       }
+                                                     }
+                                         },
+                  "/api/assets/page":  {
+                                           "get":  {
+                                                       "tags":  [
+                                                                    "AssetInfoController"
+                                                                ],
+                                                       "summary":  "Paginate assets",
+                                                       "operationId":  "page_2",
+                                                       "parameters":  [
+                                                                          {
+                                                                              "name":  "current",
+                                                                              "in":  "query",
+                                                                              "required":  false,
+                                                                              "schema":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int64",
+                                                                                             "default":  1
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "name":  "size",
+                                                                              "in":  "query",
+                                                                              "required":  false,
+                                                                              "schema":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int64",
+                                                                                             "default":  10
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                       "responses":  {
+                                                                         "500":  {
+                                                                                     "description":  "Internal Server Error",
+                                                                                     "content":  {
+                                                                                                     "*/*":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                            }
+                                                                                                             }
+                                                                                                 }
+                                                                                 },
+                                                                         "200":  {
+                                                                                     "description":  "OK",
+                                                                                     "content":  {
+                                                                                                     "*/*":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "$ref":  "#/components/schemas/ApiResultIPageAssetInfo"
+                                                                                                                            }
+                                                                                                             }
+                                                                                                 }
+                                                                                 }
+                                                                     }
+                                                   }
+                                       },
+                  "/api/watchlist/{id}":  {
+                                              "delete":  {
+                                                             "tags":  [
+                                                                          "UserWatchlistController"
+                                                                      ],
+                                                             "summary":  "Remove an asset from watchlist by record ID",
+                                                             "operationId":  "remove",
+                                                             "parameters":  [
+                                                                                {
+                                                                                    "name":  "id",
+                                                                                    "in":  "path",
+                                                                                    "required":  true,
+                                                                                    "schema":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "format":  "int64"
+                                                                                               }
+                                                                                }
+                                                                            ],
+                                                             "responses":  {
+                                                                               "500":  {
+                                                                                           "description":  "Internal Server Error",
+                                                                                           "content":  {
+                                                                                                           "*/*":  {
+                                                                                                                       "schema":  {
+                                                                                                                                      "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                                  }
+                                                                                                                   }
+                                                                                                       }
+                                                                                       },
+                                                                               "200":  {
+                                                                                           "description":  "OK",
+                                                                                           "content":  {
+                                                                                                           "*/*":  {
+                                                                                                                       "schema":  {
+                                                                                                                                      "$ref":  "#/components/schemas/ApiResultVoid"
+                                                                                                                                  }
+                                                                                                                   }
+                                                                                                       }
+                                                                                       }
+                                                                           }
+                                                         }
+                                          }
+              },
+    "components":  {
+                       "schemas":  {
+                                       "ApiResultVoid":  {
+                                                             "type":  "object",
+                                                             "properties":  {
+                                                                                "code":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int32"
+                                                                                         },
+                                                                                "message":  {
+                                                                                                "type":  "string"
+                                                                                            },
+                                                                                "data":  {
+
+                                                                                         }
+                                                                            }
+                                                         },
+                                       "UserInfo":  {
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                                           "id":  {
+                                                                                      "type":  "integer",
+                                                                                      "format":  "int64"
+                                                                                  },
+                                                                           "userName":  {
+                                                                                            "type":  "string"
+                                                                                        },
+                                                                           "email":  {
+                                                                                         "type":  "string"
+                                                                                     },
+                                                                           "baseCurrency":  {
+                                                                                                "type":  "string"
+                                                                                            },
+                                                                           "isDeleted":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int32"
+                                                                                         },
+                                                                           "createTime":  {
+                                                                                              "type":  "string",
+                                                                                              "format":  "date-time"
+                                                                                          },
+                                                                           "updateTime":  {
+                                                                                              "type":  "string",
+                                                                                              "format":  "date-time"
+                                                                                          }
+                                                                       }
+                                                    },
+                                       "ApiResultUserInfo":  {
+                                                                 "type":  "object",
+                                                                 "properties":  {
+                                                                                    "code":  {
+                                                                                                 "type":  "integer",
+                                                                                                 "format":  "int32"
+                                                                                             },
+                                                                                    "message":  {
+                                                                                                    "type":  "string"
+                                                                                                },
+                                                                                    "data":  {
+                                                                                                 "$ref":  "#/components/schemas/UserInfo"
+                                                                                             }
+                                                                                }
+                                                             },
+                                       "UserHolding":  {
+                                                           "type":  "object",
+                                                           "properties":  {
+                                                                              "id":  {
+                                                                                         "type":  "integer",
+                                                                                         "format":  "int64"
+                                                                                     },
+                                                                              "userId":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int64"
+                                                                                         },
+                                                                              "assetId":  {
+                                                                                              "type":  "integer",
+                                                                                              "format":  "int64"
+                                                                                          },
+                                                                              "quantity":  {
+                                                                                               "type":  "number"
+                                                                                           },
+                                                                              "avgCost":  {
+                                                                                              "type":  "number"
+                                                                                          },
+                                                                              "isDeleted":  {
+                                                                                                "type":  "integer",
+                                                                                                "format":  "int32"
+                                                                                            },
+                                                                              "createTime":  {
+                                                                                                 "type":  "string",
+                                                                                                 "format":  "date-time"
+                                                                                             },
+                                                                              "updateTime":  {
+                                                                                                 "type":  "string",
+                                                                                                 "format":  "date-time"
+                                                                                             }
+                                                                          }
+                                                       },
+                                       "ApiResultUserHolding":  {
+                                                                    "type":  "object",
+                                                                    "properties":  {
+                                                                                       "code":  {
+                                                                                                    "type":  "integer",
+                                                                                                    "format":  "int32"
+                                                                                                },
+                                                                                       "message":  {
+                                                                                                       "type":  "string"
+                                                                                                   },
+                                                                                       "data":  {
+                                                                                                    "$ref":  "#/components/schemas/UserHolding"
+                                                                                                }
+                                                                                   }
+                                                                },
+                                       "AssetInfo":  {
+                                                         "type":  "object",
+                                                         "properties":  {
+                                                                            "id":  {
+                                                                                       "type":  "integer",
+                                                                                       "format":  "int64"
+                                                                                   },
+                                                                            "symbol":  {
+                                                                                           "type":  "string"
+                                                                                       },
+                                                                            "fullName":  {
+                                                                                             "type":  "string"
+                                                                                         },
+                                                                            "assetType":  {
+                                                                                              "type":  "string"
+                                                                                          },
+                                                                            "currentPrice":  {
+                                                                                                 "type":  "number"
+                                                                                             },
+                                                                            "isDeleted":  {
+                                                                                              "type":  "integer",
+                                                                                              "format":  "int32"
+                                                                                          },
+                                                                            "createTime":  {
+                                                                                               "type":  "string",
+                                                                                               "format":  "date-time"
+                                                                                           },
+                                                                            "updateTime":  {
+                                                                                               "type":  "string",
+                                                                                               "format":  "date-time"
+                                                                                           }
+                                                                        }
+                                                     },
+                                       "ApiResultAssetInfo":  {
+                                                                  "type":  "object",
+                                                                  "properties":  {
+                                                                                     "code":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "format":  "int32"
+                                                                                              },
+                                                                                     "message":  {
+                                                                                                     "type":  "string"
+                                                                                                 },
+                                                                                     "data":  {
+                                                                                                  "$ref":  "#/components/schemas/AssetInfo"
+                                                                                              }
+                                                                                 }
+                                                              },
+                                       "ApiResultUserWatchlist":  {
+                                                                      "type":  "object",
+                                                                      "properties":  {
+                                                                                         "code":  {
+                                                                                                      "type":  "integer",
+                                                                                                      "format":  "int32"
+                                                                                                  },
+                                                                                         "message":  {
+                                                                                                         "type":  "string"
+                                                                                                     },
+                                                                                         "data":  {
+                                                                                                      "$ref":  "#/components/schemas/UserWatchlist"
+                                                                                                  }
+                                                                                     }
+                                                                  },
+                                       "UserWatchlist":  {
+                                                             "type":  "object",
+                                                             "properties":  {
+                                                                                "id":  {
+                                                                                           "type":  "integer",
+                                                                                           "format":  "int64"
+                                                                                       },
+                                                                                "userId":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64"
+                                                                                           },
+                                                                                "assetId":  {
+                                                                                                "type":  "integer",
+                                                                                                "format":  "int64"
+                                                                                            },
+                                                                                "isDeleted":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "format":  "int32"
+                                                                                              },
+                                                                                "createTime":  {
+                                                                                                   "type":  "string",
+                                                                                                   "format":  "date-time"
+                                                                                               },
+                                                                                "updateTime":  {
+                                                                                                   "type":  "string",
+                                                                                                   "format":  "date-time"
+                                                                                               }
+                                                                            }
+                                                         },
+                                       "ApiResultListUserWatchlistVO":  {
+                                                                            "type":  "object",
+                                                                            "properties":  {
+                                                                                               "code":  {
+                                                                                                            "type":  "integer",
+                                                                                                            "format":  "int32"
+                                                                                                        },
+                                                                                               "message":  {
+                                                                                                               "type":  "string"
+                                                                                                           },
+                                                                                               "data":  {
+                                                                                                            "type":  "array",
+                                                                                                            "items":  {
+                                                                                                                          "$ref":  "#/components/schemas/UserWatchlistVO"
+                                                                                                                      }
+                                                                                                        }
+                                                                                           }
+                                                                        },
+                                       "UserWatchlistVO":  {
+                                                               "type":  "object",
+                                                               "properties":  {
+                                                                                  "id":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int64"
+                                                                                         },
+                                                                                  "userId":  {
+                                                                                                 "type":  "integer",
+                                                                                                 "format":  "int64"
+                                                                                             },
+                                                                                  "assetId":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "format":  "int64"
+                                                                                              },
+                                                                                  "symbol":  {
+                                                                                                 "type":  "string"
+                                                                                             },
+                                                                                  "fullName":  {
+                                                                                                   "type":  "string"
+                                                                                               },
+                                                                                  "assetType":  {
+                                                                                                    "type":  "string"
+                                                                                                },
+                                                                                  "currentPrice":  {
+                                                                                                       "type":  "number"
+                                                                                                   },
+                                                                                  "createTime":  {
+                                                                                                     "type":  "string",
+                                                                                                     "format":  "date-time"
+                                                                                                 }
+                                                                              }
+                                                           },
+                                       "ApiResultListUserInfo":  {
+                                                                     "type":  "object",
+                                                                     "properties":  {
+                                                                                        "code":  {
+                                                                                                     "type":  "integer",
+                                                                                                     "format":  "int32"
+                                                                                                 },
+                                                                                        "message":  {
+                                                                                                        "type":  "string"
+                                                                                                    },
+                                                                                        "data":  {
+                                                                                                     "type":  "array",
+                                                                                                     "items":  {
+                                                                                                                   "$ref":  "#/components/schemas/UserInfo"
+                                                                                                               }
+                                                                                                 }
+                                                                                    }
+                                                                 },
+                                       "ApiResultIPageUserInfo":  {
+                                                                      "type":  "object",
+                                                                      "properties":  {
+                                                                                         "code":  {
+                                                                                                      "type":  "integer",
+                                                                                                      "format":  "int32"
+                                                                                                  },
+                                                                                         "message":  {
+                                                                                                         "type":  "string"
+                                                                                                     },
+                                                                                         "data":  {
+                                                                                                      "$ref":  "#/components/schemas/IPageUserInfo"
+                                                                                                  }
+                                                                                     }
+                                                                  },
+                                       "IPageUserInfo":  {
+                                                             "type":  "object",
+                                                             "properties":  {
+                                                                                "size":  {
+                                                                                             "type":  "integer",
+                                                                                             "format":  "int64"
+                                                                                         },
+                                                                                "records":  {
+                                                                                                "type":  "array",
+                                                                                                "items":  {
+                                                                                                              "$ref":  "#/components/schemas/UserInfo"
+                                                                                                          }
+                                                                                            },
+                                                                                "pages":  {
+                                                                                              "type":  "integer",
+                                                                                              "format":  "int64",
+                                                                                              "deprecated":  true
+                                                                                          },
+                                                                                "total":  {
+                                                                                              "type":  "integer",
+                                                                                              "format":  "int64"
+                                                                                          },
+                                                                                "current":  {
+                                                                                                "type":  "integer",
+                                                                                                "format":  "int64"
+                                                                                            }
+                                                                            }
+                                                         },
+                                       "ApiResultPortfolioOverviewVO":  {
+                                                                            "type":  "object",
+                                                                            "properties":  {
+                                                                                               "code":  {
+                                                                                                            "type":  "integer",
+                                                                                                            "format":  "int32"
+                                                                                                        },
+                                                                                               "message":  {
+                                                                                                               "type":  "string"
+                                                                                                           },
+                                                                                               "data":  {
+                                                                                                            "$ref":  "#/components/schemas/PortfolioOverviewVO"
+                                                                                                        }
+                                                                                           }
+                                                                        },
+                                       "PortfolioOverviewVO":  {
+                                                                   "type":  "object",
+                                                                   "description":  "Portfolio Overview Metrics",
+                                                                   "properties":  {
+                                                                                      "totalBalance":  {
+                                                                                                           "type":  "number",
+                                                                                                           "description":  "Total Portfolio Balance",
+                                                                                                           "example":  4892.96
+                                                                                                       },
+                                                                                      "totalProfitLoss":  {
+                                                                                                              "type":  "number",
+                                                                                                              "description":  "Total Profit/Loss",
+                                                                                                              "example":  601.65
+                                                                                                          },
+                                                                                      "returnRate":  {
+                                                                                                         "type":  "number",
+                                                                                                         "description":  "Return Rate percentage (e.g. 14.02 for 14.02%)",
+                                                                                                         "example":  14.02
+                                                                                                     }
+                                                                                  }
+                                                               },
+                                       "ApiResultListUserHolding":  {
+                                                                        "type":  "object",
+                                                                        "properties":  {
+                                                                                           "code":  {
+                                                                                                        "type":  "integer",
+                                                                                                        "format":  "int32"
+                                                                                                    },
+                                                                                           "message":  {
+                                                                                                           "type":  "string"
+                                                                                                       },
+                                                                                           "data":  {
+                                                                                                        "type":  "array",
+                                                                                                        "items":  {
+                                                                                                                      "$ref":  "#/components/schemas/UserHolding"
+                                                                                                                  }
+                                                                                                    }
+                                                                                       }
+                                                                    },
+                                       "ApiResultIPageUserHolding":  {
+                                                                         "type":  "object",
+                                                                         "properties":  {
+                                                                                            "code":  {
+                                                                                                         "type":  "integer",
+                                                                                                         "format":  "int32"
+                                                                                                     },
+                                                                                            "message":  {
+                                                                                                            "type":  "string"
+                                                                                                        },
+                                                                                            "data":  {
+                                                                                                         "$ref":  "#/components/schemas/IPageUserHolding"
+                                                                                                     }
+                                                                                        }
+                                                                     },
+                                       "IPageUserHolding":  {
+                                                                "type":  "object",
+                                                                "properties":  {
+                                                                                   "size":  {
+                                                                                                "type":  "integer",
+                                                                                                "format":  "int64"
+                                                                                            },
+                                                                                   "records":  {
+                                                                                                   "type":  "array",
+                                                                                                   "items":  {
+                                                                                                                 "$ref":  "#/components/schemas/UserHolding"
+                                                                                                             }
+                                                                                               },
+                                                                                   "pages":  {
+                                                                                                 "type":  "integer",
+                                                                                                 "format":  "int64",
+                                                                                                 "deprecated":  true
+                                                                                             },
+                                                                                   "total":  {
+                                                                                                 "type":  "integer",
+                                                                                                 "format":  "int64"
+                                                                                             },
+                                                                                   "current":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "format":  "int64"
+                                                                                               }
+                                                                               }
+                                                            },
+                                       "ApiResultListAssetInfo":  {
+                                                                      "type":  "object",
+                                                                      "properties":  {
+                                                                                         "code":  {
+                                                                                                      "type":  "integer",
+                                                                                                      "format":  "int32"
+                                                                                                  },
+                                                                                         "message":  {
+                                                                                                         "type":  "string"
+                                                                                                     },
+                                                                                         "data":  {
+                                                                                                      "type":  "array",
+                                                                                                      "items":  {
+                                                                                                                    "$ref":  "#/components/schemas/AssetInfo"
+                                                                                                                }
+                                                                                                  }
+                                                                                     }
+                                                                  },
+                                       "ApiResultIPageAssetInfo":  {
+                                                                       "type":  "object",
+                                                                       "properties":  {
+                                                                                          "code":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "format":  "int32"
+                                                                                                   },
+                                                                                          "message":  {
+                                                                                                          "type":  "string"
+                                                                                                      },
+                                                                                          "data":  {
+                                                                                                       "$ref":  "#/components/schemas/IPageAssetInfo"
+                                                                                                   }
+                                                                                      }
+                                                                   },
+                                       "IPageAssetInfo":  {
+                                                              "type":  "object",
+                                                              "properties":  {
+                                                                                 "size":  {
+                                                                                              "type":  "integer",
+                                                                                              "format":  "int64"
+                                                                                          },
+                                                                                 "records":  {
+                                                                                                 "type":  "array",
+                                                                                                 "items":  {
+                                                                                                               "$ref":  "#/components/schemas/AssetInfo"
+                                                                                                           }
+                                                                                             },
+                                                                                 "pages":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64",
+                                                                                               "deprecated":  true
+                                                                                           },
+                                                                                 "total":  {
+                                                                                               "type":  "integer",
+                                                                                               "format":  "int64"
+                                                                                           },
+                                                                                 "current":  {
+                                                                                                 "type":  "integer",
+                                                                                                 "format":  "int64"
+                                                                                             }
+                                                                             }
+                                                          }
+                                   }
+                   }
+}

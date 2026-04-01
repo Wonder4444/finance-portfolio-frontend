@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, AreaSeries, IChartApi } from 'lightweight-charts';
 import { ChevronRight, Sun, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../lib/utils';
 import type { TickerSummary } from '../services/priceApi';
 import {
@@ -261,6 +262,7 @@ interface MarketSummaryProps {
 }
 
 export function MarketSummary({ theme, assets, isLoading = false }: MarketSummaryProps) {
+    const { t } = useTranslation();
     // ── Live Market state (S&P 500 & Global Indices) ──────────────────────────
     const [heroChartData, setHeroChartData] = useState<{ time: any; value: number }[]>([]);
     const [heroPrice, setHeroPrice] = useState(0);
@@ -321,7 +323,7 @@ export function MarketSummary({ theme, assets, isLoading = false }: MarketSummar
     return (
         <div className="flex flex-col space-y-8 font-sans">
             <div className="flex flex-col space-y-4">
-                <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">Market summary</h2>
+                <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{t('marketSummary')}</h2>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                     {/* Left Card: S&P 500 Chart (LIVE) */}
@@ -377,7 +379,7 @@ export function MarketSummary({ theme, assets, isLoading = false }: MarketSummar
                     {/* Right Card: Other Group Assets or Indices */}
                     <div className="glass-panel p-6 flex flex-col min-h-[460px]">
                         <h3 className="font-bold text-base mb-5">
-                            {indices.length > 0 ? "Major indices" : "Asset Insights"}
+                            {indices.length > 0 ? t('majorIndices') : t('assetInsights')}
                         </h3>
                         {indicesLoading && indices.length === 0 ? (
                             <div className="flex-1 flex flex-col space-y-4">
@@ -392,7 +394,7 @@ export function MarketSummary({ theme, assets, isLoading = false }: MarketSummar
                                         <span className="text-xs font-mono">{formatPrice(asset.price)}</span>
                                     </div>
                                 ))}
-                                <div className="text-[10px] opacity-30 italic mt-auto">Indices not configured in database</div>
+                                <div className="text-[10px] opacity-30 italic mt-auto">{t('noIndices')}</div>
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col gap-0.5">
@@ -408,7 +410,7 @@ export function MarketSummary({ theme, assets, isLoading = false }: MarketSummar
                         )}
                         <div className="mt-4 pt-4 border-t border-[var(--border)]">
                             <button className="text-[13px] text-blue-600 dark:text-blue-400 font-medium hover:underline transition-all flex items-center">
-                                See all database assets <ChevronRight size={14} className="ml-0.5" />
+                                {t('seeAllAssets')} <ChevronRight size={14} className="ml-0.5" />
                             </button>
                         </div>
                     </div>
@@ -419,17 +421,17 @@ export function MarketSummary({ theme, assets, isLoading = false }: MarketSummar
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 {stockItems.length > 0 && (
                     <MarketList
-                        title="Database Stocks"
+                        title={t('databaseStocks')}
                         items={stockItems}
-                        footerLabel="Analysis for all stocks"
+                        footerLabel={t('analysisStocks')}
                         isLoading={isLoading && stockItems.length === 0}
                     />
                 )}
                 {cryptoItems.length > 0 && (
                     <MarketList
-                        title="Database Crypto"
+                        title={t('databaseCrypto')}
                         items={cryptoItems}
-                        footerLabel="Analysis for all crypto"
+                        footerLabel={t('analysisCrypto')}
                         isLoading={isLoading && cryptoItems.length === 0}
                     />
                 )}

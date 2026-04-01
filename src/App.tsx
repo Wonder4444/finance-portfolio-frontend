@@ -10,8 +10,10 @@ import {
   TrendingUp,
   Sun,
   Moon,
-  Loader2
+  Loader2,
+  Languages
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Watchlist } from './components/Watchlist';
 import { Portfolio } from './components/Portfolio';
 import { NewsTimeline } from './components/NewsTimeline';
@@ -110,6 +112,7 @@ function updateHoldingsWithLivePrices(holdings: Holding[], summaries: TickerSumm
 }
 
 export default function App() {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'watchlist' | 'news' | 'ai' | 'holdings_edit'>('dashboard');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -146,8 +149,8 @@ export default function App() {
       const [tickerDataMap, paginatedAssets, backendHoldings, userData] = await Promise.all([
         fetchAllTickers(),
         getBackendAssetsPaginated(1, 20),
-        getBackendHoldings(1),
-        getUser(1),
+        getBackendHoldings(),
+        getUser(2),
       ]);
 
       const summaries: TickerSummary[] = [];
@@ -246,6 +249,11 @@ export default function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
+  const toggleLanguage = () => {
+    const nextLng = i18n.language.startsWith('en') ? 'zh' : 'en';
+    i18n.changeLanguage(nextLng);
+  };
+
   // Compute the display price/change for the selected asset
   const selectedSummary = selectedAsset ? tickerSummaries.find(s => s.ticker === selectedAsset.symbol) : null;
   const displayPrice = selectedAsset ? (selectedSummary?.latestPrice ?? selectedAsset.price) : 0;
@@ -266,31 +274,31 @@ export default function App() {
         <nav className="flex-1 px-3 space-y-1 mt-4">
           <NavItem
             icon={<LayoutDashboard size={20} />}
-            label="Dashboard"
+            label={t('dashboard')}
             active={activeTab === 'dashboard'}
             onClick={() => setActiveTab('dashboard')}
           />
           <NavItem
             icon={<BarChart3 size={20} />}
-            label="Watchlist"
+            label={t('watchlist')}
             active={activeTab === 'watchlist'}
             onClick={() => setActiveTab('watchlist')}
           />
           <NavItem
             icon={<Newspaper size={20} />}
-            label="News"
+            label={t('news')}
             active={activeTab === 'news'}
             onClick={() => setActiveTab('news')}
           />
           <NavItem
             icon={<TrendingUp size={20} />}
-            label="Manage Holdings"
+            label={t('manageHoldings')}
             active={activeTab === 'holdings_edit'}
             onClick={() => setActiveTab('holdings_edit')}
           />
           <NavItem
             icon={<MessageSquare size={20} />}
-            label="AI Advisor"
+            label={t('aiAdvisor')}
             active={activeTab === 'ai'}
             onClick={() => setActiveTab('ai')}
           />
@@ -300,7 +308,7 @@ export default function App() {
         <div className="px-3 pb-4">
           <div className="hidden lg:flex items-center gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-wider opacity-40">
             <div className={cn("w-1.5 h-1.5 rounded-full", isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400")} />
-            {isLoading ? 'Loading live data...' : 'Live · Portfolio Manager API'}
+            {isLoading ? t('loadingLiveData') : t('liveMode')}
           </div>
         </div>
       </aside>
@@ -311,15 +319,23 @@ export default function App() {
         <header className="h-16 border-b border-[var(--border)] flex items-center justify-between px-8 glass-panel border-none z-40">
           <div className="flex items-center gap-4 flex-1 max-w-md">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" size={16} />
-              <input
+              {/* <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" size={16} /> */}
+              {/* <input
                 type="text"
-                placeholder="Search assets, news, or ask AI..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] p-2 pl-10 text-sm focus:outline-none focus:border-blue-500/50"
-              />
+              /> */}
             </div>
           </div>
           <div className="flex items-center gap-6">
+            <button
+              onClick={toggleLanguage}
+              className="px-3 py-2 flex items-center gap-2 glass-button text-[10px] font-bold uppercase tracking-widest transition-all"
+              aria-label="Toggle language"
+            >
+              <Languages size={14} />
+              {i18n.language.startsWith('en') ? 'EN' : 'CN'}
+            </button>
             <button
               onClick={toggleTheme}
               className="p-2 glass-button rounded-full hover:scale-110 transition-transform"
@@ -333,8 +349,8 @@ export default function App() {
             </button>
             <div className="flex items-center gap-3 pl-6 border-l border-[var(--border)]">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold">{user?.username || 'Loading...'}</p>
-                <p className="text-[10px] opacity-40 uppercase tracking-widest">{user?.accountPlan || 'Standard account'}</p>
+                <p className="text-xs font-bold">{user?.username || t('loadingLiveData')}</p>
+                <p className="text-[10px] opacity-40 uppercase tracking-widest">{user?.accountPlan || t('standardAccount')}</p>
               </div>
               <UserCircle size={32} className="opacity-60" />
             </div>
@@ -348,19 +364,19 @@ export default function App() {
               {isLoading && (
                 <div className="flex items-center gap-3 glass-panel p-4 text-sm">
                   <Loader2 size={16} className="animate-spin text-blue-500" />
-                  <span className="opacity-60">Fetching live data from Portfolio Manager API...</span>
+                  <span className="opacity-60">{t('fetchingLiveData')}</span>
                 </div>
               )}
 
               <section>
-                <h2 className="text-xs font-mono uppercase opacity-40 mb-4 tracking-widest">Portfolio Overview</h2>
+                <h2 className="text-xs font-mono uppercase opacity-40 mb-4 tracking-widest">{t('portfolioOverview')}</h2>
                 <Portfolio holdings={holdings} onManageClick={() => setActiveTab('holdings_edit')} />
               </section>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 <div className="xl:col-span-2 flex flex-col space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">Market Analysis</h2>
+                    <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{t('marketAnalysis')}</h2>
                     <div className="flex gap-2">
                       {['1D', '1W', '1M', '1Y', 'ALL'].map(t => (
                         <button key={t} className="text-[10px] px-2 py-1 glass-button">{t}</button>
@@ -394,14 +410,14 @@ export default function App() {
                     ) : (
                       <div className="flex-1 flex items-center justify-center opacity-40">
                         <Loader2 className="animate-spin mr-2" size={16} />
-                        <span>Initializing market data...</span>
+                        <span>{t('initializingMarketData')}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex flex-col space-y-4">
-                  <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">Recent Activity</h2>
+                  <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{t('recentActivity')}</h2>
                   <div className="glass-panel flex-1 min-h-[400px] flex flex-col">
                     <div className="flex-1 min-h-0 relative w-full">
                       <div className="absolute inset-0 overflow-hidden">
@@ -441,7 +457,7 @@ export default function App() {
                           <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">LIVE</span>
                         )}
                       </div>
-                      <button className="glass-button px-6 py-2 text-sm">Trade</button>
+                      <button className="glass-button px-6 py-2 text-sm">{t('trade')}</button>
                     </div>
                     <div className="glass-panel flex-1 p-6 flex flex-col">
                       <div className="flex-1 min-h-0 relative w-full">
@@ -451,16 +467,16 @@ export default function App() {
                       </div>
                     </div>
                     <div className="grid grid-cols-4 gap-4">
-                      <StatBox label="Latest Price" value={`$${displayPrice.toFixed(2)}`} />
-                      <StatBox label="Change" value={`${displayChange >= 0 ? '+' : ''}${displayChangePercent.toFixed(2)}%`} positive={displayChange >= 0} />
-                      <StatBox label="Day High" value={selectedSummary ? `$${selectedSummary.dayHigh.toFixed(2)}` : '—'} />
-                      <StatBox label="Day Low" value={selectedSummary ? `$${selectedSummary.dayLow.toFixed(2)}` : '—'} />
+                      <StatBox label={t('latestPrice')} value={`$${displayPrice.toFixed(2)}`} />
+                      <StatBox label={t('change')} value={`${displayChange >= 0 ? '+' : ''}${displayChangePercent.toFixed(2)}%`} positive={displayChange >= 0} />
+                      <StatBox label={t('dayHigh')} value={selectedSummary ? `$${selectedSummary.dayHigh.toFixed(2)}` : '—'} />
+                      <StatBox label={t('dayLow')} value={selectedSummary ? `$${selectedSummary.dayLow.toFixed(2)}` : '—'} />
                     </div>
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center opacity-40">
                     <Loader2 className="animate-spin mr-2" size={16} />
-                    <span>Loading asset details...</span>
+                    <span>{t('loadingAssetDetails')}</span>
                   </div>
                 )}
               </div>
@@ -470,7 +486,7 @@ export default function App() {
           {activeTab === 'news' && (
             <div className="flex-1 p-8 overflow-y-auto">
               <div className="max-w-4xl mx-auto space-y-8">
-                <h2 className="text-3xl font-bold tracking-tighter">MARKET NEWS</h2>
+                <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">{t('marketNews')}</h2>
                 <div className="glass-panel">
                   <NewsTimeline news={newsData} />
                 </div>
@@ -482,8 +498,8 @@ export default function App() {
             <div className="flex-1 p-8 flex flex-col">
               <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col gap-6">
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-3xl font-bold tracking-tighter">AI INVESTMENT ADVISOR</h2>
-                  <p className="text-sm opacity-40">Discuss your strategy, analyze assets, or get market insights.</p>
+                  <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">{t('aiAdvisor')}</h2>
+                  <p className="text-sm opacity-40 font-mono">{t('aiAdvisorDescription')}</p>
                 </div>
                 <div className="flex-1 min-h-0">
                   <AIChat />
