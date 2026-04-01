@@ -11,7 +11,9 @@ import {
   Sun,
   Moon,
   Loader2,
-  Languages
+  Languages,
+  Activity,
+  AlertTriangle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Watchlist } from './components/Watchlist';
@@ -54,6 +56,14 @@ const MOCK_NEWS: NewsItem[] = [
   { id: '2', time: '11:15 AM', title: 'Fed Signals Potential Rate Hold', summary: 'Jerome Powell hints that interest rates might remain steady for the next quarter.', impact: 'neutral', category: 'Economy' },
   { id: '3', time: '01:45 PM', title: 'Crypto Regulation Update', summary: 'New bill introduced in Congress aims to clarify stablecoin oversight.', impact: 'negative', category: 'Crypto' },
   { id: '4', time: '03:00 PM', title: 'Oil Prices Surge on Supply Concerns', summary: 'Global oil benchmarks rise 2% following reports of production cuts.', impact: 'negative', category: 'Commodity' },
+];
+
+const MOCK_ANOMALIES = [
+  { id: 1, type: 'surge', symbol: 'NVDA', time: '10:45 AM', message: 'Abnormal volume spike, +2.5% in 5 mins', zhMessage: '异常放量拉升，5分钟涨幅超2.5%' },
+  { id: 2, type: 'milestone', symbol: 'BTC', time: '10:42 AM', message: 'Price broke $70,000 resistance', zhMessage: '价格突破 $70,000 阻力位' },
+  { id: 3, type: 'drop', symbol: 'TSLA', time: '10:30 AM', message: 'Institutional block sell detected', zhMessage: '检测到机构大单卖出' },
+  { id: 4, type: 'news', symbol: 'GOLD', time: '10:15 AM', message: 'Surges to ATH amid rate cut signals', zhMessage: '受降息预期影响，金价创历史新高' },
+  { id: 5, type: 'surge', symbol: 'AAPL', time: '09:50 AM', message: 'Strong pre-market breakout', zhMessage: '盘前强势突破，资金持续流入' },
 ];
 
 /**
@@ -439,6 +449,41 @@ export default function App() {
               <section>
                 <h2 className="text-xs font-mono uppercase opacity-40 mb-4 tracking-widest">{t('portfolioOverview')}</h2>
                 <Portfolio holdings={holdings} onManageClick={() => setActiveTab('holdings_edit')} />
+              </section>
+
+              {/* Horizontal Scrolling Bar for Market Anomalies */}
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Activity size={16} className="text-blue-500" />
+                  <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{t('marketAnomalies')}</h2>
+                </div>
+                <div
+                  className="flex overflow-hidden relative w-full pb-4 items-center"
+                  style={{ maskImage: 'linear-gradient(to right, transparent 0, black 30px, black calc(100% - 30px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 30px, black calc(100% - 30px), transparent 100%)' }}
+                >
+                  <div className="flex gap-4 w-max animate-marquee hover-pause py-1">
+                    {[...MOCK_ANOMALIES, ...MOCK_ANOMALIES].map((anomaly, idx) => (
+                      <div key={`${anomaly.id}-${idx}`} className="glass-panel p-4 w-[300px] flex-shrink-0 flex flex-col gap-3 rounded-lg card-border hover:bg-[var(--foreground)]/5 cursor-pointer transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className={cn(
+                              "text-[10px] px-2 py-0.5 rounded font-mono font-bold",
+                              anomaly.type === 'surge' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
+                                anomaly.type === 'drop' ? "bg-red-500/10 text-red-400 border border-red-500/20" :
+                                  anomaly.type === 'milestone' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" :
+                                    "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            )}>
+                              {anomaly.symbol}
+                            </span>
+                            <span className="text-[10px] opacity-40 font-mono">{anomaly.time}</span>
+                          </div>
+                          {anomaly.type === 'drop' ? <AlertTriangle size={14} className="text-red-400" /> : <Activity size={14} className={anomaly.type === 'surge' ? 'text-green-400' : anomaly.type === 'milestone' ? 'text-purple-400' : 'text-blue-400'} />}
+                        </div>
+                        <p className="text-sm font-medium">{i18n.language.startsWith('zh') ? anomaly.zhMessage : anomaly.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </section>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
