@@ -66,5 +66,6 @@
     "fetchingLiveData": "Fetching live data from Portfolio Manager API...",
     "initializingMarketData": "Initializing market data...",
     "loadingAssetDetails": "Loading asset details...",
-    "aiAdvisorDescription": "Discuss your strategy, analyze assets, or get market insights."
+    "aiAdvisorDescription": "Discuss your strategy, analyze assets, or get market insights.",
+    "marketAnomalies": "Market Movements"
 }

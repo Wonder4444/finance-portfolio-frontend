@@ -66,5 +66,6 @@
     "fetchingLiveData": "正在从 Portfolio Manager API 获取实时数据...",
     "initializingMarketData": "正在初始化市场数据...",
     "loadingAssetDetails": "正在加载资产详情...",
-    "aiAdvisorDescription": "讨论您的投资策略、分析资产或获取市场洞察。"
+    "aiAdvisorDescription": "讨论您的投资策略、分析资产或获取市场洞察。",
+    "marketAnomalies": "市场异动"
 }

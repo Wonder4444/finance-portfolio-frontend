@@ -1,8 +1,7 @@
-import React from 'react';
-import { Clock, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { NewsItem } from '../types';
-import { cn } from '../lib/utils';
-import { useTranslation } from 'react-i18next';
+import React from "react";
+import { Clock } from "lucide-react";
+import { NewsItem } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface NewsTimelineProps {
   news: NewsItem[];
@@ -14,8 +13,10 @@ export const NewsTimeline: React.FC<NewsTimelineProps> = ({ news }) => {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">{t('marketTimeline')}</h2>
-        <span className="text-[10px] opacity-40 uppercase">{t('today')}</span>
+        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">
+          {t("marketTimeline")}
+        </h2>
+        <span className="text-[10px] opacity-40 uppercase">{t("today")}</span>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-6 relative">
         {/* Vertical Line */}
@@ -24,11 +25,7 @@ export const NewsTimeline: React.FC<NewsTimelineProps> = ({ news }) => {
         {news.map((item) => (
           <div key={item.id} className="relative pl-8 group">
             {/* Dot */}
-            <div className={cn(
-              "absolute left-[21px] top-1.5 w-2 h-2 rounded-full z-10 border-2 border-[var(--background)]",
-              item.impact === 'positive' ? "bg-green-500" :
-                item.impact === 'negative' ? "bg-red-500" : "bg-gray-500"
-            )} />
+            <div className="absolute left-[21px] top-1.5 w-2 h-2 rounded-full z-10 border-2 border-[var(--background)] bg-gray-500" />
 
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 text-[10px] font-mono opacity-50">
@@ -38,24 +35,22 @@ export const NewsTimeline: React.FC<NewsTimelineProps> = ({ news }) => {
                   {item.category}
                 </span>
               </div>
-              <h3 className="text-sm font-medium group-hover:text-blue-400 transition-colors">
-                {item.title}
+              <h3 className="text-sm font-medium transition-colors">
+                {item.link ? (
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-400 focus:outline-none focus:text-blue-400"
+                  >
+                    {item.title}
+                  </a>
+                ) : (
+                  <span className="group-hover:text-blue-400">
+                    {item.title}
+                  </span>
+                )}
               </h3>
-              <p className="text-xs opacity-60 leading-relaxed">
-                {item.summary}
-              </p>
-              <div className="flex items-center gap-1 mt-1">
-                {item.impact === 'positive' && <TrendingUp size={12} className="text-green-500" />}
-                {item.impact === 'negative' && <TrendingDown size={12} className="text-red-500" />}
-                {item.impact === 'neutral' && <Minus size={12} className="text-gray-500" />}
-                <span className={cn(
-                  "text-[10px] uppercase font-bold tracking-tighter",
-                  item.impact === 'positive' ? "text-green-500" :
-                    item.impact === 'negative' ? "text-red-500" : "text-gray-500"
-                )}>
-                  {item.impact}
-                </span>
-              </div>
             </div>
           </div>
         ))}
