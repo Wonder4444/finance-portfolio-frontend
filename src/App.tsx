@@ -130,6 +130,9 @@ export default function App() {
     return (saved as 'light' | 'dark') || 'dark';
   });
 
+  const [timeRange, setTimeRange] = useState<'1D' | '1W' | '1M' | '1Y' | 'ALL'>('1M');
+  const [rawChartDataMap, setRawChartDataMap] = useState<Map<string, RawPriceData>>(new Map());
+
   // Fetch live data from the Portfolio Manager API and backend database
   const updateAssetsState = useCallback((backendAssets: Asset[], summaries: TickerSummary[]) => {
     const updatedAssets = updatedAssetsFromBackend(backendAssets, summaries);
@@ -166,6 +169,7 @@ export default function App() {
 
       setTickerSummaries(summaries);
       setChartDataMap(newChartMap);
+      setRawChartDataMap(tickerDataMap);
       setWatchlistPage(paginatedAssets.current);
       setWatchlistTotalPages(paginatedAssets.pages);
       setHoldings(updateHoldingsWithLivePrices(backendHoldings, summaries));
@@ -203,14 +207,78 @@ export default function App() {
     loadInitialData();
   }, [loadInitialData]);
 
-  // Update chart when selected asset changes
+  // Filter chart data based on selected time range
+  const updateChartData = useCallback((asset: Asset | null, range: string) => {
+    if (!asset) return;
+    const rawData = rawChartDataMap.get(asset.symbol);
+    if (!rawData) {
+      // Fallback to static if no raw data available
+      const fallback = chartDataMap.get(asset.symbol);
+      if (fallback) setChartData(fallback);
+      return;
+    }
+
+    const { price_data } = rawData;
+    const n = price_data.timestamp.length;
+    if (n === 0) return;
+
+    let filteredIntradayIndices: number[] = [];
+    let isIntraday = false;
+
+    if (range === '1D') {
+      isIntraday = true;
+      const lastDayString = price_data.timestamp[n - 1].split(' ')[0];
+      for (let i = 0; i < n; i++) {
+        if (price_data.timestamp[i].startsWith(lastDayString)) {
+          filteredIntradayIndices.push(i);
+        }
+      }
+    }
+
+    if (isIntraday) {
+      const bars: OHLCBar[] = filteredIntradayIndices.map(i => ({
+        time: (new Date(price_data.timestamp[i]).getTime() / 1000) as any,
+        open: price_data.open[i],
+        high: price_data.high[i],
+        low: price_data.low[i],
+        close: price_data.close[i],
+        volume: price_data.volume[i],
+      }));
+      setChartData(bars);
+      return;
+    }
+
+    // For 1W, 1M, 1Y, ALL we use daily bars
+    const dailyBars = toOHLCBars(rawData);
+    if (range === 'ALL') {
+      setChartData(dailyBars);
+      return;
+    }
+
+    const lastDateStr = dailyBars[dailyBars.length - 1]?.time;
+    if (!lastDateStr) return;
+    const lastDate = new Date(lastDateStr);
+
+    let days = 30;
+    if (range === '1W') days = 7;
+    else if (range === '1M') days = 30;
+    else if (range === '1Y') days = 365;
+
+    const cutoffDate = new Date(lastDate.getTime() - days * 24 * 60 * 60 * 1000);
+    const cutoffString = cutoffDate.toISOString().split('T')[0];
+
+    const filtered = dailyBars.filter(b => b.time >= cutoffString);
+    setChartData(filtered);
+  }, [rawChartDataMap, chartDataMap]);
+
+  // Update chart when selected asset or time range changes
+  useEffect(() => {
+    updateChartData(selectedAsset, timeRange);
+  }, [selectedAsset, timeRange, updateChartData]);
+
   const handleSelectAsset = useCallback((asset: Asset) => {
     setSelectedAsset(asset);
-    const assetChart = chartDataMap.get(asset.symbol);
-    if (assetChart) {
-      setChartData(assetChart);
-    }
-  }, [chartDataMap]);
+  }, []);
 
   // Fetch dynamic news from CryptoCompare
   useEffect(() => {
@@ -378,8 +446,17 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{t('marketAnalysis')}</h2>
                     <div className="flex gap-2">
-                      {['1D', '1W', '1M', '1Y', 'ALL'].map(t => (
-                        <button key={t} className="text-[10px] px-2 py-1 glass-button">{t}</button>
+                      {(['1D', '1W', '1M', '1Y', 'ALL'] as const).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => setTimeRange(t)}
+                          className={cn(
+                            "text-[10px] px-2 py-1 glass-button transition-colors",
+                            timeRange === t ? "bg-[var(--foreground)]/20 border-white/30 font-bold" : ""
+                          )}
+                        >
+                          {t}
+                        </button>
                       ))}
                     </div>
                   </div>
