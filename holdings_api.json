@@ -1,0 +1,29 @@
+[
+  {
+    "path": "/api/holdings/{id}",
+    "methods": [
+      "get",
+      "put",
+      "delete"
+    ]
+  },
+  {
+    "path": "/api/holdings",
+    "methods": [
+      "get",
+      "post"
+    ]
+  },
+  {
+    "path": "/api/holdings/user/{userId}",
+    "methods": [
+      "get"
+    ]
+  },
+  {
+    "path": "/api/holdings/page",
+    "methods": [
+      "get"
+    ]
+  }
+]

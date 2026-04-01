@@ -1,39 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, 
-  BarChart3, 
-  Newspaper, 
-  MessageSquare, 
-  Settings, 
-  LogOut,
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  LayoutDashboard,
+  BarChart3,
+  Newspaper,
+  MessageSquare,
   Search,
   Bell,
   UserCircle,
-  TrendingUp
+  TrendingUp,
+  Sun,
+  Moon,
+  Loader2,
+  Languages,
+  Activity,
+  AlertTriangle
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Watchlist } from './components/Watchlist';
 import { Portfolio } from './components/Portfolio';
 import { NewsTimeline } from './components/NewsTimeline';
 import { AIChat } from './components/AIChat';
 import { CandlestickChart } from './components/CandlestickChart';
-import { Asset, Holding, NewsItem } from './types';
+import { MarketSummary } from './components/MarketSummary';
+import { Asset, Holding, NewsItem, User } from './types';
 import { cn } from './lib/utils';
+import {
+  fetchAllTickers,
+  toTickerSummary,
+  toOHLCBars,
+  AVAILABLE_TICKERS,
+  TICKER_META,
+  type RawPriceData,
+  type TickerSummary,
+  type OHLCBar,
+} from "./services/priceApi";
+import { fetchYahooNews } from "./services/newsApi";
 
-// Mock Data
-const MOCK_ASSETS: Asset[] = [
-  { id: '1', symbol: 'AAPL', name: 'Apple Inc.', type: 'stock', price: 182.63, change: 1.2, changePercent: 0.65 },
-  { id: '2', symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 64231.50, change: -1200, changePercent: -1.8 },
-  { id: '3', symbol: 'ETH', name: 'Ethereum', type: 'crypto', price: 3452.10, change: 45, changePercent: 1.3 },
-  { id: '4', symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock', price: 875.28, change: 12.5, changePercent: 1.45 },
-  { id: '5', symbol: 'VTI', name: 'Vanguard Total Stock Market', type: 'fund', price: 254.12, change: 0.8, changePercent: 0.32 },
-  { id: '6', symbol: 'TSLA', name: 'Tesla, Inc.', type: 'stock', price: 175.43, change: -4.2, changePercent: -2.3 },
+import {
+  getBackendAssets,
+  getBackendAssetsPaginated,
+  getBackendHoldings,
+  getUser,
+} from "./services/backendApi";
+import { HoldingsEditor } from "./components/HoldingsEditor";
+
+// Static fund fallbacks (not available from the stock API or current backend)
+const STATIC_FUND_ASSETS: Asset[] = [
+  {
+    id: "fund-vti",
+    symbol: "VTI",
+    name: "Vanguard Total Stock Market",
+    type: "fund",
+    price: 254.12,
+    change: 0.8,
+    changePercent: 0.32,
+  },
 ];
 
-const MOCK_HOLDINGS: Holding[] = [
-  { ...MOCK_ASSETS[0], amount: 10, avgCost: 150, totalValue: 1826.3, profit: 326.3, profitPercent: 21.75 },
-  { ...MOCK_ASSETS[1], amount: 0.05, avgCost: 45000, totalValue: 3211.57, profit: 961.57, profitPercent: 42.7 },
-  { ...MOCK_ASSETS[3], amount: 5, avgCost: 600, totalValue: 4376.4, profit: 1376.4, profitPercent: 45.88 },
-];
+const FALLBACK_CHART_DATA = Array.from({ length: 50 }, (_, i) => ({
+  time: new Date(Date.now() - (50 - i) * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0],
+  open: 150 + Math.random() * 50,
+  high: 210 + Math.random() * 20,
+  low: 140 + Math.random() * 20,
+  close: 160 + Math.random() * 50,
+}));
 
 const MOCK_NEWS: NewsItem[] = [
   { id: '1', time: '09:30 AM', title: 'Market Open: Tech Stocks Lead Gains', summary: 'Nasdaq opens higher as NVIDIA and Apple show strong momentum in pre-market trading.', impact: 'positive', category: 'Market' },
@@ -42,85 +74,399 @@ const MOCK_NEWS: NewsItem[] = [
   { id: '4', time: '03:00 PM', title: 'Oil Prices Surge on Supply Concerns', summary: 'Global oil benchmarks rise 2% following reports of production cuts.', impact: 'negative', category: 'Commodity' },
 ];
 
-const MOCK_CHART_DATA = Array.from({ length: 50 }, (_, i) => ({
-  time: new Date(Date.now() - (50 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  open: 150 + Math.random() * 50,
-  high: 210 + Math.random() * 20,
-  low: 140 + Math.random() * 20,
-  close: 160 + Math.random() * 50,
-}));
+const MOCK_ANOMALIES = [
+  { id: 1, type: 'surge', symbol: 'NVDA', time: '10:45 AM', message: 'Abnormal volume spike, +2.5% in 5 mins', zhMessage: '异常放量拉升，5分钟涨幅超2.5%' },
+  { id: 2, type: 'milestone', symbol: 'BTC', time: '10:42 AM', message: 'Price broke $70,000 resistance', zhMessage: '价格突破 $70,000 阻力位' },
+  { id: 3, type: 'drop', symbol: 'TSLA', time: '10:30 AM', message: 'Institutional block sell detected', zhMessage: '检测到机构大单卖出' },
+  { id: 4, type: 'news', symbol: 'GOLD', time: '10:15 AM', message: 'Surges to ATH amid rate cut signals', zhMessage: '受降息预期影响，金价创历史新高' },
+  { id: 5, type: 'surge', symbol: 'AAPL', time: '09:50 AM', message: 'Strong pre-market breakout', zhMessage: '盘前强势突破，资金持续流入' },
+];
+
+/**
+ * Convert a TickerSummary to Asset type for use in the watchlist / portfolio
+ */
+function summaryToAsset(s: TickerSummary, index: number): Asset {
+  return {
+    id: `api-${s.ticker}-${index}`,
+    symbol: s.ticker,
+    name: s.name,
+    type: s.type,
+    price: s.latestPrice,
+    change: s.change,
+    changePercent: s.changePercent,
+    isLive: true,
+  };
+}
+
+function updatedAssetsFromBackend(
+  backendAssets: Asset[],
+  summaries: TickerSummary[],
+): Asset[] {
+  return backendAssets.map((ba) => {
+    const live = summaries.find((s) => s.ticker === ba.symbol);
+    if (live) {
+      return {
+        ...ba,
+        price: live.latestPrice,
+        change: live.change,
+        changePercent: live.changePercent,
+        isLive: true,
+      };
+    }
+    return { ...ba, isLive: false };
+  });
+}
+
+function updateHoldingsWithLivePrices(
+  holdings: Holding[],
+  summaries: TickerSummary[],
+): Holding[] {
+  return holdings.map((h) => {
+    const live = summaries.find((s) => s.ticker === h.symbol);
+    if (live) {
+      const totalValue = live.latestPrice * h.amount;
+      const totalCost = h.avgCost * h.amount;
+      const profit = totalValue - totalCost;
+      const profitPercent = totalCost !== 0 ? (profit / totalCost) * 100 : 0;
+      return {
+        ...h,
+        price: live.latestPrice,
+        change: live.change,
+        changePercent: live.changePercent,
+        totalValue,
+        profit,
+        profitPercent,
+        isLive: true,
+      };
+    }
+    return { ...h, isLive: false };
+  });
+}
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'watchlist' | 'news' | 'ai'>('dashboard');
-  const [selectedAsset, setSelectedAsset] = useState<Asset>(MOCK_ASSETS[0]);
+  const { t, i18n } = useTranslation();
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "watchlist" | "news" | "ai" | "holdings_edit"
+  >("dashboard");
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [newsData, setNewsData] = useState<NewsItem[]>([]);
+  const [chartData, setChartData] = useState<OHLCBar[]>(FALLBACK_CHART_DATA);
+  const [chartDataMap, setChartDataMap] = useState<Map<string, OHLCBar[]>>(
+    new Map(),
+  );
+  const [tickerSummaries, setTickerSummaries] = useState<TickerSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [watchlistPage, setWatchlistPage] = useState(1);
+  const [watchlistTotalPages, setWatchlistTotalPages] = useState(1);
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem("theme");
+    return (saved as "light" | "dark") || "dark";
+  });
+
+  const [timeRange, setTimeRange] = useState<'1D' | '1W' | '1M' | '1Y' | 'ALL'>('1M');
+  const [rawChartDataMap, setRawChartDataMap] = useState<Map<string, RawPriceData>>(new Map());
+
+  // Fetch live data from the Portfolio Manager API and backend database
+  const updateAssetsState = useCallback(
+    (backendAssets: Asset[], summaries: TickerSummary[]) => {
+      const updatedAssets = updatedAssetsFromBackend(backendAssets, summaries);
+      const allAssets = [...updatedAssets, ...STATIC_FUND_ASSETS];
+      setAssets(allAssets);
+
+      // Set initial selected asset and chart if not already set
+      if (allAssets.length > 0 && !selectedAsset) {
+        setSelectedAsset(allAssets[0]);
+      }
+    },
+    [selectedAsset],
+  );
+
+  // Fetch live prices and initial data
+  const loadInitialData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [tickerDataMap, paginatedAssets, backendHoldings, userData] =
+        await Promise.all([
+          fetchAllTickers(),
+          getBackendAssetsPaginated(1, 20),
+          getBackendHoldings(),
+          getUser(2),
+        ]);
+
+      const summaries: TickerSummary[] = [];
+      const newChartMap = new Map<string, OHLCBar[]>();
+
+      for (const ticker of AVAILABLE_TICKERS) {
+        const raw = tickerDataMap.get(ticker);
+        if (raw) {
+          summaries.push(toTickerSummary(raw));
+          newChartMap.set(ticker, toOHLCBars(raw));
+        }
+      }
+
+      setTickerSummaries(summaries);
+      setChartDataMap(newChartMap);
+      setRawChartDataMap(tickerDataMap);
+      setWatchlistPage(paginatedAssets.current);
+      setWatchlistTotalPages(paginatedAssets.pages);
+      setHoldings(updateHoldingsWithLivePrices(backendHoldings, summaries));
+      setUser(userData);
+
+      updateAssetsState(paginatedAssets.records, summaries);
+
+      // Auto-select first asset chart
+      if (paginatedAssets.records.length > 0) {
+        const firstChart = newChartMap.get(paginatedAssets.records[0].symbol);
+        if (firstChart && !selectedAsset) setChartData(firstChart);
+      }
+    } catch (err) {
+      console.error("Failed to load initial data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedAsset, updateAssetsState]);
+
+  const loadWatchlistPage = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      try {
+        const paginatedAssets = await getBackendAssetsPaginated(page, 20);
+        setWatchlistPage(paginatedAssets.current);
+        setWatchlistTotalPages(paginatedAssets.pages);
+        updateAssetsState(paginatedAssets.records, tickerSummaries);
+      } catch (err) {
+        console.error("Failed to load watchlist page:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [tickerSummaries, updateAssetsState],
+  );
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  // Filter chart data based on selected time range
+  const updateChartData = useCallback((asset: Asset | null, range: string) => {
+    if (!asset) return;
+    const rawData = rawChartDataMap.get(asset.symbol);
+    if (!rawData) {
+      // Fallback to static if no raw data available
+      const fallback = chartDataMap.get(asset.symbol);
+      if (fallback) setChartData(fallback);
+      return;
+    }
+
+    const { price_data } = rawData;
+    const n = price_data.timestamp.length;
+    if (n === 0) return;
+
+    let filteredIntradayIndices: number[] = [];
+    let isIntraday = false;
+
+    if (range === '1D') {
+      isIntraday = true;
+      const lastDayString = price_data.timestamp[n - 1].split(' ')[0];
+      for (let i = 0; i < n; i++) {
+        if (price_data.timestamp[i].startsWith(lastDayString)) {
+          filteredIntradayIndices.push(i);
+        }
+      }
+    }
+
+    if (isIntraday) {
+      const bars: OHLCBar[] = filteredIntradayIndices.map(i => ({
+        time: (new Date(price_data.timestamp[i]).getTime() / 1000) as any,
+        open: price_data.open[i],
+        high: price_data.high[i],
+        low: price_data.low[i],
+        close: price_data.close[i],
+        volume: price_data.volume[i],
+      }));
+      setChartData(bars);
+      return;
+    }
+
+    // For 1W, 1M, 1Y, ALL we use daily bars
+    const dailyBars = toOHLCBars(rawData);
+    if (range === 'ALL') {
+      setChartData(dailyBars);
+      return;
+    }
+
+    const lastDateStr = dailyBars[dailyBars.length - 1]?.time;
+    if (!lastDateStr) return;
+    const lastDate = new Date(lastDateStr);
+
+    let days = 30;
+    if (range === '1W') days = 7;
+    else if (range === '1M') days = 30;
+    else if (range === '1Y') days = 365;
+
+    const cutoffDate = new Date(lastDate.getTime() - days * 24 * 60 * 60 * 1000);
+    const cutoffString = cutoffDate.toISOString().split('T')[0];
+
+    const filtered = dailyBars.filter(b => b.time >= cutoffString);
+    setChartData(filtered);
+  }, [rawChartDataMap, chartDataMap]);
+
+  // Update chart when selected asset or time range changes
+  useEffect(() => {
+    updateChartData(selectedAsset, timeRange);
+  }, [selectedAsset, timeRange, updateChartData]);
+
+  const handleSelectAsset = useCallback((asset: Asset) => {
+    setSelectedAsset(asset);
+  }, []);
+
+  // Fetch Yahoo Finance RSS news
+  useEffect(() => {
+    fetchYahooNews()
+      .then((items) => {
+        setNewsData(items);
+      })
+      .catch((err) => {
+        console.error("Could not fetch Yahoo RSS news", err);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () =>
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+
+  const toggleLanguage = () => {
+    const nextLng = i18n.language.startsWith("en") ? "zh" : "en";
+    i18n.changeLanguage(nextLng);
+  };
+
+  // Compute the display price/change for the selected asset
+  const selectedSummary = selectedAsset
+    ? tickerSummaries.find((s) => s.ticker === selectedAsset.symbol)
+    : null;
+  const displayPrice = selectedAsset
+    ? (selectedSummary?.latestPrice ?? selectedAsset.price)
+    : 0;
+  const displayChange = selectedAsset
+    ? (selectedSummary?.change ?? selectedAsset.change)
+    : 0;
+  const displayChangePercent = selectedAsset
+    ? (selectedSummary?.changePercent ?? selectedAsset.changePercent)
+    : 0;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0a0a0a] text-[#f5f5f5]">
+    <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
       {/* Sidebar */}
-      <aside className="w-16 lg:w-64 border-r border-white/10 flex flex-col glass-panel border-none z-50">
+      <aside className="w-16 lg:w-64 border-r border-[var(--border)] flex flex-col glass-panel border-none z-50">
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 flex items-center justify-center">
             <TrendingUp size={20} className="text-white" />
           </div>
-          <h1 className="hidden lg:block font-bold tracking-tighter text-xl">WEALTHWISE</h1>
+          <h1 className="hidden lg:block font-bold tracking-tighter text-xl">
+            WEALTHWISE
+          </h1>
         </div>
 
         <nav className="flex-1 px-3 space-y-1 mt-4">
-          <NavItem 
-            icon={<LayoutDashboard size={20} />} 
-            label="Dashboard" 
-            active={activeTab === 'dashboard'} 
-            onClick={() => setActiveTab('dashboard')} 
+          <NavItem
+            icon={<LayoutDashboard size={20} />}
+            label={t("dashboard")}
+            active={activeTab === "dashboard"}
+            onClick={() => setActiveTab("dashboard")}
           />
-          <NavItem 
-            icon={<BarChart3 size={20} />} 
-            label="Watchlist" 
-            active={activeTab === 'watchlist'} 
-            onClick={() => setActiveTab('watchlist')} 
+          <NavItem
+            icon={<BarChart3 size={20} />}
+            label={t("watchlist")}
+            active={activeTab === "watchlist"}
+            onClick={() => setActiveTab("watchlist")}
           />
-          <NavItem 
-            icon={<Newspaper size={20} />} 
-            label="News" 
-            active={activeTab === 'news'} 
-            onClick={() => setActiveTab('news')} 
+          <NavItem
+            icon={<Newspaper size={20} />}
+            label={t("news")}
+            active={activeTab === "news"}
+            onClick={() => setActiveTab("news")}
           />
-          <NavItem 
-            icon={<MessageSquare size={20} />} 
-            label="AI Advisor" 
-            active={activeTab === 'ai'} 
-            onClick={() => setActiveTab('ai')} 
+          <NavItem
+            icon={<TrendingUp size={20} />}
+            label={t("manageHoldings")}
+            active={activeTab === "holdings_edit"}
+            onClick={() => setActiveTab("holdings_edit")}
+          />
+          <NavItem
+            icon={<MessageSquare size={20} />}
+            label={t("aiAdvisor")}
+            active={activeTab === "ai"}
+            onClick={() => setActiveTab("ai")}
           />
         </nav>
 
-        <div className="p-4 border-t border-white/10 space-y-1">
-          <NavItem icon={<Settings size={20} />} label="Settings" />
-          <NavItem icon={<LogOut size={20} />} label="Logout" />
+        {/* Data source badge */}
+        <div className="px-3 pb-4">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-wider opacity-40">
+            <div
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                isLoading ? "bg-yellow-400 animate-pulse" : "bg-green-400",
+              )}
+            />
+            {isLoading ? t("loadingLiveData") : t("liveMode")}
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
         {/* Header */}
-        <header className="h-16 border-b border-white/10 flex items-center justify-between px-8 glass-panel border-none z-40">
+        <header className="h-16 border-b border-[var(--border)] flex items-center justify-between px-8 glass-panel border-none z-40">
           <div className="flex items-center gap-4 flex-1 max-w-md">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search assets, news, or ask AI..." 
-                className="w-full bg-white/5 border border-white/10 p-2 pl-10 text-sm focus:outline-none focus:border-blue-500/50"
-              />
+              {/* <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" size={16} /> */}
+              {/* <input
+                type="text"
+                placeholder={t('searchPlaceholder')}
+                className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] p-2 pl-10 text-sm focus:outline-none focus:border-blue-500/50"
+              /> */}
             </div>
           </div>
           <div className="flex items-center gap-6">
+            <button
+              onClick={toggleLanguage}
+              className="px-3 py-2 flex items-center gap-2 glass-button text-[10px] font-bold uppercase tracking-widest transition-all"
+              aria-label="Toggle language"
+            >
+              <Languages size={14} />
+              {i18n.language.startsWith("en") ? "EN" : "CN"}
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 glass-button rounded-full hover:scale-110 transition-transform"
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
             <button className="relative opacity-60 hover:opacity-100 transition-opacity">
               <Bell size={20} />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
             </button>
-            <div className="flex items-center gap-3 pl-6 border-l border-white/10">
+            <div className="flex items-center gap-3 pl-6 border-l border-[var(--border)]">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold">Alex Chen</p>
-                <p className="text-[10px] opacity-40 uppercase tracking-widest">Premium Plan</p>
+                <p className="text-xs font-bold">
+                  {user?.username || t("loadingLiveData")}
+                </p>
+                <p className="text-[10px] opacity-40 uppercase tracking-widest">
+                  {user?.accountPlan || t("standardAccount")}
+                </p>
               </div>
               <UserCircle size={32} className="opacity-60" />
             </div>
@@ -129,95 +475,270 @@ export default function App() {
 
         {/* Content Area */}
         <div className="flex-1 overflow-hidden flex">
-          {activeTab === 'dashboard' && (
+          {activeTab === "dashboard" && (
             <div className="flex-1 p-8 overflow-y-auto space-y-8">
+              {isLoading && (
+                <div className="flex items-center gap-3 glass-panel p-4 text-sm">
+                  <Loader2 size={16} className="animate-spin text-blue-500" />
+                  <span className="opacity-60">{t("fetchingLiveData")}</span>
+                </div>
+              )}
+
               <section>
-                <h2 className="text-xs font-mono uppercase opacity-40 mb-4 tracking-widest">Portfolio Overview</h2>
-                <Portfolio holdings={MOCK_HOLDINGS} />
+                <h2 className="text-xs font-mono uppercase opacity-40 mb-4 tracking-widest">
+                  {t("portfolioOverview")}
+                </h2>
+                <Portfolio
+                  holdings={holdings}
+                  onManageClick={() => setActiveTab("holdings_edit")}
+                />
               </section>
-              
+
+              {/* Horizontal Scrolling Bar for Market Anomalies */}
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Activity size={16} className="text-blue-500" />
+                  <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">{t('marketAnomalies')}</h2>
+                </div>
+                <div
+                  className="flex overflow-hidden relative w-full pb-4 items-center"
+                  style={{ maskImage: 'linear-gradient(to right, transparent 0, black 30px, black calc(100% - 30px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 30px, black calc(100% - 30px), transparent 100%)' }}
+                >
+                  <div className="flex gap-4 w-max animate-marquee hover-pause py-1">
+                    {[...MOCK_ANOMALIES, ...MOCK_ANOMALIES].map((anomaly, idx) => (
+                      <div key={`${anomaly.id}-${idx}`} className="glass-panel p-4 w-[300px] flex-shrink-0 flex flex-col gap-3 rounded-lg card-border hover:bg-[var(--foreground)]/5 cursor-pointer transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className={cn(
+                              "text-[10px] px-2 py-0.5 rounded font-mono font-bold",
+                              anomaly.type === 'surge' ? "bg-green-500/10 text-green-400 border border-green-500/20" :
+                                anomaly.type === 'drop' ? "bg-red-500/10 text-red-400 border border-red-500/20" :
+                                  anomaly.type === 'milestone' ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" :
+                                    "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            )}>
+                              {anomaly.symbol}
+                            </span>
+                            <span className="text-[10px] opacity-40 font-mono">{anomaly.time}</span>
+                          </div>
+                          {anomaly.type === 'drop' ? <AlertTriangle size={14} className="text-red-400" /> : <Activity size={14} className={anomaly.type === 'surge' ? 'text-green-400' : anomaly.type === 'milestone' ? 'text-purple-400' : 'text-blue-400'} />}
+                        </div>
+                        <p className="text-sm font-medium">{i18n.language.startsWith('zh') ? anomaly.zhMessage : anomaly.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div className="xl:col-span-2 space-y-4">
+                <div className="xl:col-span-2 flex flex-col space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">Market Analysis</h2>
+                    <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">
+                      {t("marketAnalysis")}
+                    </h2>
                     <div className="flex gap-2">
-                      {['1D', '1W', '1M', '1Y', 'ALL'].map(t => (
-                        <button key={t} className="text-[10px] px-2 py-1 glass-button">{t}</button>
+                      {(['1D', '1W', '1M', '1Y', 'ALL'] as const).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => setTimeRange(t)}
+                          className={cn(
+                            "text-[10px] px-2 py-1 glass-button transition-colors",
+                            timeRange === t ? "bg-[var(--foreground)]/20 border-white/30 font-bold" : ""
+                          )}
+                        >
+                          {t}
+                        </button>
                       ))}
                     </div>
                   </div>
-                  <div className="glass-panel h-[400px] p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl font-bold">{selectedAsset.symbol}</span>
-                        <span className="text-sm opacity-40">{selectedAsset.name}</span>
+                  <div className="glass-panel flex-1 min-h-[400px] p-4 flex flex-col">
+                    {selectedAsset ? (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl font-bold">
+                              {selectedAsset.symbol}
+                            </span>
+                            <span className="text-sm opacity-40">
+                              {selectedAsset.name}
+                            </span>
+                            {!isLoading &&
+                              tickerSummaries.find(
+                                (s) => s.ticker === selectedAsset.symbol,
+                              ) && (
+                                <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">
+                                  LIVE
+                                </span>
+                              )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-mono">
+                              {displayPrice.toFixed(2)}
+                            </p>
+                            <p
+                              className={cn(
+                                "text-xs font-mono",
+                                displayChange >= 0
+                                  ? "text-green-400"
+                                  : "text-red-400",
+                              )}
+                            >
+                              {displayChange >= 0 ? "+" : ""}
+                              {displayChange.toFixed(2)} (
+                              {displayChangePercent >= 0 ? "+" : ""}
+                              {displayChangePercent.toFixed(2)}%)
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-h-0 relative w-full">
+                          <div className="absolute inset-0">
+                            <CandlestickChart
+                              data={chartData}
+                              containerId="main-chart"
+                              theme={theme}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center opacity-40">
+                        <Loader2 className="animate-spin mr-2" size={16} />
+                        <span>{t("initializingMarketData")}</span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-mono">182.63</p>
-                        <p className="text-xs text-green-400 font-mono">+1.25 (0.68%)</p>
-                      </div>
-                    </div>
-                    <CandlestickChart data={MOCK_CHART_DATA} containerId="main-chart" />
+                    )}
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">Recent Activity</h2>
-                  <div className="glass-panel h-[400px]">
-                    <NewsTimeline news={MOCK_NEWS} />
+
+                <div className="flex flex-col space-y-4">
+                  <h2 className="text-xs font-mono uppercase opacity-40 tracking-widest">
+                    {t("recentActivity")}
+                  </h2>
+                  <div className="glass-panel flex-1 min-h-[400px] flex flex-col">
+                    <div className="flex-1 min-h-0 relative w-full">
+                      <div className="absolute inset-0 overflow-hidden">
+                        <NewsTimeline news={newsData} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <section>
+                <MarketSummary
+                  theme={theme}
+                  assets={assets}
+                  isLoading={isLoading}
+                />
+              </section>
             </div>
           )}
 
-          {activeTab === 'watchlist' && (
+          {activeTab === "watchlist" && (
             <div className="flex-1 flex overflow-hidden">
-              <div className="w-80 border-r border-white/10 glass-panel border-none">
-                <Watchlist 
-                  assets={MOCK_ASSETS} 
-                  onSelect={setSelectedAsset} 
-                  selectedId={selectedAsset.id} 
+              <div className="w-80 h-full border-r border-[var(--border)] glass-panel border-none flex flex-col">
+                <Watchlist
+                  assets={assets}
+                  onSelect={handleSelectAsset}
+                  selectedId={selectedAsset?.id || ""}
+                  currentPage={watchlistPage}
+                  totalPages={watchlistTotalPages}
+                  onPageChange={(page) => loadWatchlistPage(page)}
                 />
               </div>
               <div className="flex-1 p-8 flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold">{selectedAsset.name}</h2>
-                    <span className="px-2 py-1 bg-white/5 border border-white/10 text-[10px] uppercase font-mono">{selectedAsset.type}</span>
+                {selectedAsset ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-bold">
+                          {selectedAsset.name}
+                        </h2>
+                        <span className="px-2 py-1 bg-[var(--foreground)]/5 border border-[var(--border)] text-[10px] uppercase font-mono">
+                          {selectedAsset.type}
+                        </span>
+                        {tickerSummaries.find(
+                          (s) => s.ticker === selectedAsset.symbol,
+                        ) && (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">
+                            LIVE
+                          </span>
+                        )}
+                      </div>
+                      <button className="glass-button px-6 py-2 text-sm">
+                        {t("trade")}
+                      </button>
+                    </div>
+                    <div className="glass-panel flex-1 p-6 flex flex-col">
+                      <div className="flex-1 min-h-0 relative w-full">
+                        <div className="absolute inset-0">
+                          <CandlestickChart
+                            data={chartData}
+                            containerId="watchlist-chart"
+                            theme={theme}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                      <StatBox
+                        label={t("latestPrice")}
+                        value={`$${displayPrice.toFixed(2)}`}
+                      />
+                      <StatBox
+                        label={t("change")}
+                        value={`${displayChange >= 0 ? "+" : ""}${displayChangePercent.toFixed(2)}%`}
+                        positive={displayChange >= 0}
+                      />
+                      <StatBox
+                        label={t("dayHigh")}
+                        value={
+                          selectedSummary
+                            ? `$${selectedSummary.dayHigh.toFixed(2)}`
+                            : "—"
+                        }
+                      />
+                      <StatBox
+                        label={t("dayLow")}
+                        value={
+                          selectedSummary
+                            ? `$${selectedSummary.dayLow.toFixed(2)}`
+                            : "—"
+                        }
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center opacity-40">
+                    <Loader2 className="animate-spin mr-2" size={16} />
+                    <span>{t("loadingAssetDetails")}</span>
                   </div>
-                  <button className="glass-button px-6 py-2 text-sm">Trade</button>
-                </div>
-                <div className="glass-panel flex-1 p-6">
-                   <CandlestickChart data={MOCK_CHART_DATA} containerId="watchlist-chart" />
-                </div>
-                <div className="grid grid-cols-4 gap-4">
-                  <StatBox label="Market Cap" value="2.84T" />
-                  <StatBox label="P/E Ratio" value="28.42" />
-                  <StatBox label="Dividend Yield" value="0.52%" />
-                  <StatBox label="52W High" value="199.62" />
-                </div>
+                )}
               </div>
             </div>
           )}
 
-          {activeTab === 'news' && (
+          {activeTab === "news" && (
             <div className="flex-1 p-8 overflow-y-auto">
               <div className="max-w-4xl mx-auto space-y-8">
-                <h2 className="text-3xl font-bold tracking-tighter">MARKET NEWS</h2>
+                <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">
+                  {t("marketNews")}
+                </h2>
                 <div className="glass-panel">
-                  <NewsTimeline news={[...MOCK_NEWS, ...MOCK_NEWS]} />
+                  <NewsTimeline news={newsData} />
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'ai' && (
+          {activeTab === "ai" && (
             <div className="flex-1 p-8 flex flex-col">
               <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col gap-6">
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-3xl font-bold tracking-tighter">AI INVESTMENT ADVISOR</h2>
-                  <p className="text-sm opacity-40">Discuss your strategy, analyze assets, or get market insights.</p>
+                  <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">
+                    {t("aiAdvisor")}
+                  </h2>
+                  <p className="text-sm opacity-40 font-mono">
+                    {t("aiAdvisorDescription")}
+                  </p>
                 </div>
                 <div className="flex-1 min-h-0">
                   <AIChat />
@@ -225,33 +746,81 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {activeTab === "holdings_edit" && (
+            <HoldingsEditor
+              assets={assets}
+              holdings={holdings}
+              onRefresh={loadInitialData}
+              isLoading={isLoading}
+            />
+          )}
         </div>
       </main>
     </div>
   );
 }
 
-function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
+function NavItem({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
   return (
-    <button 
+    <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 p-3 transition-all duration-200 group",
-        active ? "bg-white/10 text-white" : "text-white/40 hover:text-white hover:bg-white/5"
+        "w-full flex items-center gap-3 p-3 transition-all duration-200 group text-[var(--foreground)]",
+        active
+          ? "bg-[var(--foreground)]/10"
+          : "opacity-40 hover:opacity-100 hover:bg-[var(--foreground)]/5",
       )}
     >
-      <span className={cn(active ? "text-blue-400" : "group-hover:text-white")}>{icon}</span>
+      <span
+        className={cn(
+          active ? "text-blue-500" : "group-hover:text-[var(--foreground)]",
+        )}
+      >
+        {icon}
+      </span>
       <span className="hidden lg:block text-sm font-medium">{label}</span>
-      {active && <div className="hidden lg:block ml-auto w-1 h-4 bg-blue-500" />}
+      {active && (
+        <div className="hidden lg:block ml-auto w-1 h-4 bg-blue-500" />
+      )}
     </button>
   );
 }
 
-function StatBox({ label, value }: { label: string, value: string }) {
+function StatBox({
+  label,
+  value,
+  positive,
+}: {
+  label: string;
+  value: string;
+  positive?: boolean;
+}) {
   return (
     <div className="glass-panel p-4">
       <p className="text-[10px] uppercase opacity-40 font-mono mb-1">{label}</p>
-      <p className="text-lg font-bold tracking-tight">{value}</p>
+      <p
+        className={cn(
+          "text-lg font-bold tracking-tight",
+          positive !== undefined
+            ? positive
+              ? "text-green-400"
+              : "text-red-400"
+            : "",
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
