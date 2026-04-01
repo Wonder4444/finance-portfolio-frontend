@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { chatWithAI } from '../lib/gemini';
+
 import { ChatMessage } from '../types';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ export const AIChat: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [chatId, setChatId] = useState('');
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -32,16 +33,47 @@ export const AIChat: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    const response = await chatWithAI(input);
+    try {
+      const response = await fetch('/finance-portfolio/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: 2,
+          chatId: chatId,
+          message: input,
+        }),
+      });
 
-    const assistantMsg: ChatMessage = {
-      role: 'assistant',
-      content: response || t('aiError'),
-      timestamp: new Date(),
-    };
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
 
-    setMessages((prev) => [...prev, assistantMsg]);
-    setIsLoading(false);
+      const data = await response.json();
+      
+      if (data.chatId && !chatId) {
+        setChatId(data.chatId);
+      }
+
+      const assistantMsg: ChatMessage = {
+        role: 'assistant',
+        content: data.reply || t('aiError'),
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch (error) {
+      console.error('Error in AI chat:', error);
+      const errorMsg: ChatMessage = {
+        role: 'assistant',
+        content: t('aiError'),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
