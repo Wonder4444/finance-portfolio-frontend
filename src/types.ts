@@ -6,6 +6,7 @@ export interface Asset {
   price: number;
   change: number;
   changePercent: number;
+  isLive?: boolean;
 }
 
 export interface Holding extends Asset {
@@ -29,4 +30,11 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  accountPlan: string;
 }

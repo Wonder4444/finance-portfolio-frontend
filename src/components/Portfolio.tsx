@@ -6,11 +6,12 @@ import { ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
 
 interface PortfolioProps {
   holdings: Holding[];
+  onManageClick?: () => void;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-export const Portfolio: React.FC<PortfolioProps> = ({ holdings }) => {
+export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick }) => {
   const totalValue = holdings.reduce((acc, h) => acc + h.totalValue, 0);
   const totalProfit = holdings.reduce((acc, h) => acc + h.profit, 0);
   const totalProfitPercent = (totalProfit / (totalValue - totalProfit)) * 100;
@@ -55,7 +56,17 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-panel p-4">
-          <h3 className="text-[10px] uppercase opacity-50 font-mono mb-4">Asset Allocation</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[10px] uppercase opacity-50 font-mono">Asset Allocation</h3>
+            {onManageClick && (
+              <button
+                onClick={onManageClick}
+                className="text-[10px] text-blue-400 hover:text-blue-300 font-mono uppercase tracking-widest border border-blue-400/20 px-2 py-0.5 rounded transition-colors"
+              >
+                Manage
+              </button>
+            )}
+          </div>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

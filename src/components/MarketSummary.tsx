@@ -7,8 +7,8 @@ import {
     fetchSP500Chart,
     fetchAllIndices,
     type IndexQuote,
-    type ChartPoint,
 } from '../services/indicesApi';
+
 
 // ── Area chart component ─────────────────────────────────────────────
 function AreaChart({ data, theme, isNegative }: { data: { time: any; value: number }[]; theme: 'light' | 'dark'; isNegative?: boolean }) {
@@ -83,68 +83,30 @@ function AreaChart({ data, theme, isNegative }: { data: { time: any; value: numb
     return <div ref={chartContainerRef} className="w-full h-[320px]" />;
 }
 
-// ── Fallback static data ─────────────────────────────────────────────
-const FALLBACK_INDICES = [
-    { symbol: '^NDX', name: 'Nasdaq 100', displaySymbol: 'NDX', currency: 'USD', price: 23132.77, previousClose: 23587, change: -454.23, changePercent: -1.93, icon: '100', iconColor: 'bg-[#00a8e8]', type: 'D', isLive: false },
-    { symbol: '^N225', name: 'Japan 225', displaySymbol: 'NI225', currency: 'JPY', price: 51885.80, previousClose: 53375, change: -1489.2, changePercent: -2.79, icon: '225', iconColor: 'bg-[#1e3a8a]', type: '', isLive: false },
-    { symbol: '000001.SS', name: 'SSE Composite', displaySymbol: '000001', currency: 'CNY', price: 3923.2869, previousClose: 3914, change: 9.29, changePercent: 0.24, icon: 'SSE', iconColor: 'bg-[#1e3a8a]', type: 'D', isLive: false },
-    { symbol: '^FTSE', name: 'FTSE 100', displaySymbol: 'UKX', currency: 'GBP', price: 10020.75, previousClose: 9966, change: 54.75, changePercent: 0.54, icon: 'GB', iconColor: '', type: 'D', isLive: false },
-    { symbol: '^GDAXI', name: 'DAX', displaySymbol: 'DAX', currency: 'EUR', price: 22290.08, previousClose: 22301, change: -10.92, changePercent: -0.05, icon: 'X', iconColor: 'bg-[#2563eb]', type: 'D', isLive: false },
-    { symbol: '^FCHI', name: 'CAC 40', displaySymbol: 'PX1', currency: 'EUR', price: 7713.88, previousClose: 7702, change: 11.88, changePercent: 0.15, icon: '40', iconColor: 'bg-[#059669]', type: 'D', isLive: false },
-];
-
-// Fallback S&P 500 chart data (generated)
-const FALLBACK_SP500_CHART = Array.from({ length: 400 }, (_, i) => {
-    const date = new Date('2026-03-30T14:00:00Z');
-    date.setMinutes(date.getMinutes() + (i * 2));
-    let value = 6400;
-    if (i < 50) value -= i * 0.5 + Math.random() * 5;
-    else if (i < 100) value += (i - 50) * 0.3 + Math.random() * 10;
-    else if (i < 200) value -= (i - 100) * 0.8 + Math.random() * 8;
-    else if (i < 300) value -= (i - 200) * 0.4 + Math.random() * 4;
-    else value -= (i - 300) * 0.6 + Math.random() * 6;
-    return { time: Math.floor(date.getTime() / 1000) as any, value: value - 50 };
-});
-
-const HIGHEST_VOLUME_CRYPTO = [
-    { id: 'c1', name: 'Bitcoin', symbol: 'BTC', value: '64,231.50', currency: 'USD', change: '-1.82%', isNegative: true, icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
-    { id: 'c2', name: 'Ethereum', symbol: 'ETH', value: '3,452.10', currency: 'USD', change: '+1.34%', isNegative: false, icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
-    { id: 'c3', name: 'Solana', symbol: 'SOL', value: '145.28', currency: 'USD', change: '+4.52%', isNegative: false, icon: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
-    { id: 'c4', name: 'Binance Coin', symbol: 'BNB', value: '582.40', currency: 'USD', change: '-0.51%', isNegative: true, icon: 'https://cryptologos.cc/logos/bnb-bnb-logo.png' },
-    { id: 'c5', name: 'Cardano', symbol: 'ADA', value: '0.45', currency: 'USD', change: '-2.13%', isNegative: true, icon: 'https://cryptologos.cc/logos/cardano-ada-logo.png' },
-    { id: 'c6', name: 'Dogecoin', symbol: 'DOGE', value: '0.16', currency: 'USD', change: '+12.45%', isNegative: false, icon: 'https://cryptologos.cc/logos/dogecoin-doge-logo.png' },
-];
-
-const FALLBACK_STOCKS = [
-    { id: 's1', name: 'NVIDIA Corporation', symbol: 'NVDA', value: '167.52', currency: 'USD', change: '-2.17%', isNegative: true, icon: 'https://logo.clearbit.com/nvidia.com' },
-    { id: 's4', name: 'Tesla, Inc.', symbol: 'TSLA', value: '361.83', currency: 'USD', change: '-2.76%', isNegative: true, icon: 'https://logo.clearbit.com/tesla.com' },
-    { id: 's5', name: 'Micron Technology', symbol: 'MU', value: '357.22', currency: 'USD', change: '+0.50%', isNegative: false, icon: 'https://logo.clearbit.com/micron.com' },
-    { id: 's3', name: 'Meta Platforms, Inc.', symbol: 'META', value: '525.72', currency: 'USD', change: '-3.99%', isNegative: true, icon: 'https://logo.clearbit.com/meta.com' },
-    { id: 's2', name: 'Microsoft Corporation', symbol: 'MSFT', value: '356.77', currency: 'USD', change: '-2.51%', isNegative: true, icon: 'https://logo.clearbit.com/microsoft.com' },
-    { id: 's6', name: 'Apple Inc.', symbol: 'AAPL', value: '248.80', currency: 'USD', change: '-1.62%', isNegative: true, icon: 'https://logo.clearbit.com/apple.com' },
-];
-
-const TICKER_ICONS: Record<string, string> = {
-    AAPL: 'https://logo.clearbit.com/apple.com',
-    TSLA: 'https://logo.clearbit.com/tesla.com',
-    AMZN: 'https://logo.clearbit.com/amazon.com',
-    C: 'https://logo.clearbit.com/citigroup.com',
-    FB: 'https://logo.clearbit.com/meta.com',
+// ── Dynamic Icon Helper ─────────────────────────────────────────────
+const getAssetIcon = (symbol: string, type?: string) => {
+    const s = symbol.split('.')[0].toUpperCase();
+    if (type === 'crypto' || s === 'BTC' || s === 'ETH' || s === 'SOL' || s === 'BNB' || s === 'ADA' || s === 'DOGE') {
+        return `https://cryptologos.cc/logos/${s.toLowerCase()}-${s.toLowerCase()}-logo.png`;
+    }
+    // Try Clearbit for stocks
+    return `https://logo.clearbit.com/${s.toLowerCase()}.com`;
 };
 
-function summariesToMarketItems(summaries: TickerSummary[]) {
-    return summaries
-        .sort((a, b) => b.totalVolume - a.totalVolume)
-        .map((s, i) => ({
-            id: `live-${s.ticker}-${i}`,
-            name: s.name,
-            symbol: s.ticker,
-            value: s.latestPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+import type { Asset } from '../types';
+
+function assetsToMarketItems(assets: Asset[]) {
+    return assets
+        .map((a) => ({
+            id: a.id,
+            name: a.name,
+            symbol: a.symbol,
+            value: a.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             currency: 'USD',
-            change: `${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`,
-            isNegative: s.changePercent < 0,
-            icon: TICKER_ICONS[s.ticker] || `https://ui-avatars.com/api/?name=${s.ticker}&background=random`,
-            isLive: true,
+            change: `${a.changePercent >= 0 ? '+' : ''}${a.changePercent.toFixed(2)}%`,
+            isNegative: a.changePercent < 0,
+            icon: getAssetIcon(a.symbol, a.type),
+            isLive: !!a.isLive,
         }));
 }
 
@@ -294,69 +256,67 @@ function IndexRow({ index }: { index: IndexQuote }) {
 // ══════════════════════════════════════════════════════════════════════
 interface MarketSummaryProps {
     theme: 'light' | 'dark';
-    tickerSummaries?: TickerSummary[];
+    assets: Asset[];
     isLoading?: boolean;
 }
 
-export function MarketSummary({ theme, tickerSummaries = [], isLoading = false }: MarketSummaryProps) {
-    // ── Live index state ─────────────────────────────────────────────
-    const [spChartData, setSpChartData] = useState<{ time: any; value: number }[]>(FALLBACK_SP500_CHART);
-    const [spPrice, setSpPrice] = useState(6368.86);
-    const [spChangePercent, setSpChangePercent] = useState(-1.67);
-    const [spIsLive, setSpIsLive] = useState(false);
-    const [indices, setIndices] = useState<IndexQuote[]>(FALLBACK_INDICES);
+export function MarketSummary({ theme, assets, isLoading = false }: MarketSummaryProps) {
+    // ── Live Market state (S&P 500 & Global Indices) ──────────────────────────
+    const [heroChartData, setHeroChartData] = useState<{ time: any; value: number }[]>([]);
+    const [heroPrice, setHeroPrice] = useState(0);
+    const [heroChangePercent, setHeroChangePercent] = useState(0);
+    const [heroIsLive, setHeroIsLive] = useState(false);
+    const [heroMeta] = useState({ symbol: 'SPX', name: 'S&P 500', icon: '500', iconColor: 'bg-[#cb2d3e]' });
+
+    const [indices, setIndices] = useState<IndexQuote[]>([]);
     const [indicesLoading, setIndicesLoading] = useState(true);
 
     useEffect(() => {
-        let cancelled = false;
+        let isMounted = true;
 
-        async function loadIndices() {
+        async function loadMarketData() {
             setIndicesLoading(true);
+            try {
+                // Parallel fetch for Hero (SP500) and Major Indices
+                const [spResult, fetchedIndices] = await Promise.all([
+                    fetchSP500Chart('5d', '15m'),
+                    fetchAllIndices()
+                ]);
 
-            // Fetch S&P 500 chart + all major indices in parallel
-            const [spResult, idxResult] = await Promise.allSettled([
-                fetchSP500Chart('5d', '15m'),
-                fetchAllIndices(),
-            ]);
+                if (!isMounted) return;
 
-            if (cancelled) return;
-
-            // S&P 500 chart
-            if (spResult.status === 'fulfilled') {
-                const sp = spResult.value;
-                if (sp.points.length > 0) {
-                    setSpChartData(sp.points.map(p => ({ time: p.time as any, value: p.value })));
-                    setSpPrice(sp.price);
-                    setSpChangePercent(sp.changePercent);
-                    setSpIsLive(true);
+                // Update Hero data from API
+                if (spResult.points.length > 0) {
+                    setHeroChartData(spResult.points.map(p => ({ time: p.time as any, value: p.value })));
+                    setHeroPrice(spResult.price);
+                    setHeroChangePercent(spResult.changePercent);
+                    setHeroIsLive(true);
                 }
-            } else {
-                console.warn('S&P 500 chart fetch failed, using fallback:', spResult.reason);
-            }
 
-            // Major indices
-            if (idxResult.status === 'fulfilled' && idxResult.value.length > 0) {
-                setIndices(idxResult.value);
-            } else {
-                console.warn('Indices fetch failed, using fallback:', idxResult.status === 'rejected' ? idxResult.reason : 'No data');
+                // Update Major Indices from API
+                if (fetchedIndices && fetchedIndices.length > 0) {
+                    setIndices(fetchedIndices);
+                }
+            } catch (e) {
+                console.warn('Market live data fetch failed, using fallback values:', e);
+                // Fallback values are already in state, but we could explicitly reset to 0 if requirements change.
+            } finally {
+                if (isMounted) setIndicesLoading(false);
             }
-
-            setIndicesLoading(false);
         }
 
-        loadIndices();
-        return () => { cancelled = true; };
-    }, []);
+        loadMarketData();
+        return () => { isMounted = false; };
+    }, [assets]);
 
-    // ── Stock items (from Portfolio Manager API) ─────────────────────
-    const liveStockItems = tickerSummaries.length > 0
-        ? summariesToMarketItems(tickerSummaries)
-        : FALLBACK_STOCKS;
-    const stockItems = liveStockItems.length >= 6
-        ? liveStockItems.slice(0, 6)
-        : [...liveStockItems, ...FALLBACK_STOCKS.filter(fb => !liveStockItems.find(li => li.symbol === fb.symbol)).slice(0, 6 - liveStockItems.length)];
+    // ── Asset items (from backend / price API) ───────────────────
+    const stockAssets = assets.filter(a => a.type === 'stock').slice(0, 6);
+    const cryptoAssets = assets.filter(a => a.type === 'crypto').slice(0, 6);
 
-    const spIsNegative = spChangePercent < 0;
+    const stockItems = assetsToMarketItems(stockAssets);
+    const cryptoItems = assetsToMarketItems(cryptoAssets);
+
+    const isNegative = heroChangePercent < 0;
 
     return (
         <div className="flex flex-col space-y-8 font-sans">
@@ -375,7 +335,7 @@ export function MarketSummary({ theme, tickerSummaries = [], isLoading = false }
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-bold text-lg leading-none">S&P 500</h3>
                                         <span className="text-[10px] px-1.5 py-0.5 bg-[var(--foreground)]/5 border border-[var(--border)] rounded font-semibold text-[var(--foreground)]/70 leading-none">SPX</span>
-                                        {spIsLive ? (
+                                        {heroIsLive ? (
                                             <span className="text-[7px] px-1 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono leading-none ml-1">LIVE</span>
                                         ) : (
                                             <span className="w-5 h-4 bg-[var(--foreground)]/5 rounded border border-[var(--border)] flex items-center justify-center text-[10px] text-[var(--foreground)]/50 leading-none ml-1">−</span>
@@ -389,10 +349,10 @@ export function MarketSummary({ theme, tickerSummaries = [], isLoading = false }
                                             </div>
                                         ) : (
                                             <>
-                                                <span className="text-[26px] font-bold tracking-tight leading-none">{formatPrice(spPrice)}</span>
+                                                <span className="text-[26px] font-bold tracking-tight leading-none">{formatPrice(heroPrice)}</span>
                                                 <span className="text-xs font-semibold opacity-60 mb-[2px]">USD</span>
-                                                <span className={cn("text-sm font-semibold mb-[2px] ml-2", spIsNegative ? "text-[#ef4444]" : "text-[#10b981]")}>
-                                                    {spIsNegative ? '' : '+'}{spChangePercent.toFixed(2)}%
+                                                <span className={cn("text-sm font-semibold mb-[2px] ml-2", isNegative ? "text-[#ef4444]" : "text-[#10b981]")}>
+                                                    {heroChangePercent >= 0 ? '+' : ''}{heroChangePercent.toFixed(2)}%
                                                 </span>
                                             </>
                                         )}
@@ -403,18 +363,36 @@ export function MarketSummary({ theme, tickerSummaries = [], isLoading = false }
 
                         <div className="flex-1 w-full relative -mx-4 -mb-2 mt-4 px-4 overflow-hidden">
                             <div className="absolute inset-0">
-                                <AreaChart data={spChartData} theme={theme} isNegative={spIsNegative} />
+                                {heroChartData.length > 0 ? (
+                                    <AreaChart data={heroChartData} theme={theme} isNegative={isNegative} />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full opacity-20">
+                                        <Loader2 size={32} className="animate-spin" />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Card: Major Indices (LIVE) */}
+                    {/* Right Card: Other Group Assets or Indices */}
                     <div className="glass-panel p-6 flex flex-col min-h-[460px]">
-                        <h3 className="font-bold text-base mb-5">Major indices</h3>
-                        {indicesLoading ? (
-                            <div className="flex-1 flex items-center justify-center gap-2 opacity-40">
-                                <Loader2 size={16} className="animate-spin" />
-                                <span className="text-sm">Loading indices...</span>
+                        <h3 className="font-bold text-base mb-5">
+                            {indices.length > 0 ? "Major indices" : "Asset Insights"}
+                        </h3>
+                        {indicesLoading && indices.length === 0 ? (
+                            <div className="flex-1 flex flex-col space-y-4">
+                                {assets.slice(0, 6).map((asset, i) => (
+                                    <div key={asset.id} className="flex items-center justify-between py-2 border-b border-[var(--border)]/10">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-[var(--foreground)]/5 flex items-center justify-center text-[10px] font-bold">
+                                                {asset.symbol.substring(0, 2)}
+                                            </div>
+                                            <span className="text-xs font-medium">{asset.name}</span>
+                                        </div>
+                                        <span className="text-xs font-mono">{formatPrice(asset.price)}</span>
+                                    </div>
+                                ))}
+                                <div className="text-[10px] opacity-30 italic mt-auto">Indices not configured in database</div>
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col gap-0.5">
@@ -430,26 +408,31 @@ export function MarketSummary({ theme, tickerSummaries = [], isLoading = false }
                         )}
                         <div className="mt-4 pt-4 border-t border-[var(--border)]">
                             <button className="text-[13px] text-blue-600 dark:text-blue-400 font-medium hover:underline transition-all flex items-center">
-                                See all major indices <ChevronRight size={14} className="ml-0.5" />
+                                See all database assets <ChevronRight size={14} className="ml-0.5" />
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Highest Volume Stocks (from Portfolio Manager API) & Crypto */}
+            {/* Market Sections Based on Backend Data Types */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                <MarketList
-                    title="Highest volume stocks"
-                    items={stockItems}
-                    footerLabel="See all most actively traded stocks"
-                    isLoading={isLoading && tickerSummaries.length === 0}
-                />
-                <MarketList
-                    title="Highest volume crypto"
-                    items={HIGHEST_VOLUME_CRYPTO}
-                    footerLabel="See all most actively traded crypto"
-                />
+                {stockItems.length > 0 && (
+                    <MarketList
+                        title="Database Stocks"
+                        items={stockItems}
+                        footerLabel="Analysis for all stocks"
+                        isLoading={isLoading && stockItems.length === 0}
+                    />
+                )}
+                {cryptoItems.length > 0 && (
+                    <MarketList
+                        title="Database Crypto"
+                        items={cryptoItems}
+                        footerLabel="Analysis for all crypto"
+                        isLoading={isLoading && cryptoItems.length === 0}
+                    />
+                )}
             </div>
         </div>
     );

@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       proxy: {
+        // Proxy local backend API requests
+        '/finance-portfolio': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+        },
         // Proxy Yahoo Finance API requests to bypass CORS
         '/yahoo-finance': {
           target: 'https://query1.finance.yahoo.com',

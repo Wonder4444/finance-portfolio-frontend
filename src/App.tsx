@@ -18,7 +18,7 @@ import { NewsTimeline } from './components/NewsTimeline';
 import { AIChat } from './components/AIChat';
 import { CandlestickChart } from './components/CandlestickChart';
 import { MarketSummary } from './components/MarketSummary';
-import { Asset, Holding, NewsItem } from './types';
+import { Asset, Holding, NewsItem, User } from './types';
 import { cn } from './lib/utils';
 import {
   fetchAllTickers,
@@ -31,24 +31,12 @@ import {
   type OHLCBar,
 } from './services/priceApi';
 
-// Static crypto / fund fallbacks (not available from the stock API)
-const STATIC_CRYPTO_ASSETS: Asset[] = [
-  { id: 'crypto-btc', symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 64231.50, change: -1200, changePercent: -1.8 },
-  { id: 'crypto-eth', symbol: 'ETH', name: 'Ethereum', type: 'crypto', price: 3452.10, change: 45, changePercent: 1.3 },
-];
+import { getBackendAssets, getBackendAssetsPaginated, getBackendHoldings, getUser } from './services/backendApi';
+import { HoldingsEditor } from './components/HoldingsEditor';
 
+// Static fund fallbacks (not available from the stock API or current backend)
 const STATIC_FUND_ASSETS: Asset[] = [
   { id: 'fund-vti', symbol: 'VTI', name: 'Vanguard Total Stock Market', type: 'fund', price: 254.12, change: 0.8, changePercent: 0.32 },
-];
-
-// Fallback mock data in case the API fails
-const FALLBACK_ASSETS: Asset[] = [
-  { id: '1', symbol: 'AAPL', name: 'Apple Inc.', type: 'stock', price: 182.63, change: 1.2, changePercent: 0.65 },
-  { id: '2', symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 64231.50, change: -1200, changePercent: -1.8 },
-  { id: '3', symbol: 'ETH', name: 'Ethereum', type: 'crypto', price: 3452.10, change: 45, changePercent: 1.3 },
-  { id: '4', symbol: 'TSLA', name: 'Tesla, Inc.', type: 'stock', price: 175.43, change: -4.2, changePercent: -2.3 },
-  { id: '5', symbol: 'VTI', name: 'Vanguard Total Stock Market', type: 'fund', price: 254.12, change: 0.8, changePercent: 0.32 },
-  { id: '6', symbol: 'AMZN', name: 'Amazon.com, Inc.', type: 'stock', price: 178.25, change: 2.1, changePercent: 1.19 },
 ];
 
 const FALLBACK_CHART_DATA = Array.from({ length: 50 }, (_, i) => ({
@@ -78,93 +66,139 @@ function summaryToAsset(s: TickerSummary, index: number): Asset {
     price: s.latestPrice,
     change: s.change,
     changePercent: s.changePercent,
+    isLive: true,
   };
 }
 
+function updatedAssetsFromBackend(backendAssets: Asset[], summaries: TickerSummary[]): Asset[] {
+  return backendAssets.map(ba => {
+    const live = summaries.find(s => s.ticker === ba.symbol);
+    if (live) {
+      return {
+        ...ba,
+        price: live.latestPrice,
+        change: live.change,
+        changePercent: live.changePercent,
+        isLive: true,
+      };
+    }
+    return { ...ba, isLive: false };
+  });
+}
+
+function updateHoldingsWithLivePrices(holdings: Holding[], summaries: TickerSummary[]): Holding[] {
+  return holdings.map(h => {
+    const live = summaries.find(s => s.ticker === h.symbol);
+    if (live) {
+      const totalValue = live.latestPrice * h.amount;
+      const totalCost = h.avgCost * h.amount;
+      const profit = totalValue - totalCost;
+      const profitPercent = totalCost !== 0 ? (profit / totalCost) * 100 : 0;
+      return {
+        ...h,
+        price: live.latestPrice,
+        change: live.change,
+        changePercent: live.changePercent,
+        totalValue,
+        profit,
+        profitPercent,
+        isLive: true,
+      };
+    }
+    return { ...h, isLive: false };
+  });
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'watchlist' | 'news' | 'ai'>('dashboard');
-  const [assets, setAssets] = useState<Asset[]>(FALLBACK_ASSETS);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'watchlist' | 'news' | 'ai' | 'holdings_edit'>('dashboard');
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<Asset>(FALLBACK_ASSETS[0]);
+  const [user, setUser] = useState<User | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [newsData, setNewsData] = useState<NewsItem[]>(MOCK_NEWS);
   const [chartData, setChartData] = useState<OHLCBar[]>(FALLBACK_CHART_DATA);
   const [chartDataMap, setChartDataMap] = useState<Map<string, OHLCBar[]>>(new Map());
   const [tickerSummaries, setTickerSummaries] = useState<TickerSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [watchlistPage, setWatchlistPage] = useState(1);
+  const [watchlistTotalPages, setWatchlistTotalPages] = useState(1);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'dark') || 'dark';
   });
 
-  // Fetch live data from the Portfolio Manager API
-  useEffect(() => {
-    let cancelled = false;
+  // Fetch live data from the Portfolio Manager API and backend database
+  const updateAssetsState = useCallback((backendAssets: Asset[], summaries: TickerSummary[]) => {
+    const updatedAssets = updatedAssetsFromBackend(backendAssets, summaries);
+    const allAssets = [...updatedAssets, ...STATIC_FUND_ASSETS];
+    setAssets(allAssets);
 
-    async function loadLiveData() {
-      setIsLoading(true);
-      try {
-        const dataMap = await fetchAllTickers();
-        if (cancelled) return;
-
-        // Build summaries and assets from live data
-        const summaries: TickerSummary[] = [];
-        const newChartMap = new Map<string, OHLCBar[]>();
-        const liveAssets: Asset[] = [];
-
-        let idx = 0;
-        for (const ticker of AVAILABLE_TICKERS) {
-          const raw = dataMap.get(ticker);
-          if (raw) {
-            const summary = toTickerSummary(raw);
-            summaries.push(summary);
-            liveAssets.push(summaryToAsset(summary, idx));
-            newChartMap.set(ticker, toOHLCBars(raw));
-            idx++;
-          }
-        }
-
-        // Append crypto / fund assets (not from this API)
-        const allAssets = [...liveAssets, ...STATIC_CRYPTO_ASSETS, ...STATIC_FUND_ASSETS];
-
-        setTickerSummaries(summaries);
-        setChartDataMap(newChartMap);
-        setAssets(allAssets);
-
-        // Build holdings from the first 3 live assets
-        if (liveAssets.length >= 3) {
-          const newHoldings: Holding[] = liveAssets.slice(0, 3).map((a, i) => ({
-            ...a,
-            amount: [10, 5, 3][i],
-            avgCost: a.price * (1 - [0.15, 0.10, 0.08][i]),
-            totalValue: a.price * [10, 5, 3][i],
-            profit: a.price * [10, 5, 3][i] * [0.15, 0.10, 0.08][i],
-            profitPercent: [15, 10, 8][i],
-          }));
-          setHoldings(newHoldings);
-        }
-
-        // Set initial selected asset and chart
-        if (allAssets.length > 0) {
-          setSelectedAsset(allAssets[0]);
-          const firstChart = newChartMap.get(allAssets[0].symbol);
-          if (firstChart) setChartData(firstChart);
-        }
-      } catch (err) {
-        console.error('Failed to load live data from Portfolio Manager API:', err);
-        // Keep fallback data
-        setHoldings([
-          { ...FALLBACK_ASSETS[0], amount: 10, avgCost: 150, totalValue: 1826.3, profit: 326.3, profitPercent: 21.75 },
-          { ...FALLBACK_ASSETS[3], amount: 5, avgCost: 150, totalValue: 877.15, profit: -127.15, profitPercent: -12.67 },
-          { ...FALLBACK_ASSETS[5], amount: 3, avgCost: 160, totalValue: 534.75, profit: 54.75, profitPercent: 11.41 },
-        ]);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+    // Set initial selected asset and chart if not already set
+    if (allAssets.length > 0 && !selectedAsset) {
+      setSelectedAsset(allAssets[0]);
     }
+  }, [selectedAsset]);
 
-    loadLiveData();
-    return () => { cancelled = true; };
-  }, []);
+  // Fetch live prices and initial data
+  const loadInitialData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [tickerDataMap, paginatedAssets, backendHoldings, userData] = await Promise.all([
+        fetchAllTickers(),
+        getBackendAssetsPaginated(1, 20),
+        getBackendHoldings(1),
+        getUser(1),
+      ]);
+
+      const summaries: TickerSummary[] = [];
+      const newChartMap = new Map<string, OHLCBar[]>();
+
+      for (const ticker of AVAILABLE_TICKERS) {
+        const raw = tickerDataMap.get(ticker);
+        if (raw) {
+          summaries.push(toTickerSummary(raw));
+          newChartMap.set(ticker, toOHLCBars(raw));
+        }
+      }
+
+      setTickerSummaries(summaries);
+      setChartDataMap(newChartMap);
+      setWatchlistPage(paginatedAssets.current);
+      setWatchlistTotalPages(paginatedAssets.pages);
+      setHoldings(updateHoldingsWithLivePrices(backendHoldings, summaries));
+      setUser(userData);
+
+      updateAssetsState(paginatedAssets.records, summaries);
+
+      // Auto-select first asset chart
+      if (paginatedAssets.records.length > 0) {
+        const firstChart = newChartMap.get(paginatedAssets.records[0].symbol);
+        if (firstChart && !selectedAsset) setChartData(firstChart);
+      }
+    } catch (err) {
+      console.error('Failed to load initial data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedAsset, updateAssetsState]);
+
+  const loadWatchlistPage = useCallback(async (page: number) => {
+    setIsLoading(true);
+    try {
+      const paginatedAssets = await getBackendAssetsPaginated(page, 20);
+      setWatchlistPage(paginatedAssets.current);
+      setWatchlistTotalPages(paginatedAssets.pages);
+      updateAssetsState(paginatedAssets.records, tickerSummaries);
+    } catch (err) {
+      console.error('Failed to load watchlist page:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tickerSummaries, updateAssetsState]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
 
   // Update chart when selected asset changes
   const handleSelectAsset = useCallback((asset: Asset) => {
@@ -213,10 +247,10 @@ export default function App() {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   // Compute the display price/change for the selected asset
-  const selectedSummary = tickerSummaries.find(s => s.ticker === selectedAsset.symbol);
-  const displayPrice = selectedSummary?.latestPrice ?? selectedAsset.price;
-  const displayChange = selectedSummary?.change ?? selectedAsset.change;
-  const displayChangePercent = selectedSummary?.changePercent ?? selectedAsset.changePercent;
+  const selectedSummary = selectedAsset ? tickerSummaries.find(s => s.ticker === selectedAsset.symbol) : null;
+  const displayPrice = selectedAsset ? (selectedSummary?.latestPrice ?? selectedAsset.price) : 0;
+  const displayChange = selectedAsset ? (selectedSummary?.change ?? selectedAsset.change) : 0;
+  const displayChangePercent = selectedAsset ? (selectedSummary?.changePercent ?? selectedAsset.changePercent) : 0;
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
@@ -247,6 +281,12 @@ export default function App() {
             label="News"
             active={activeTab === 'news'}
             onClick={() => setActiveTab('news')}
+          />
+          <NavItem
+            icon={<TrendingUp size={20} />}
+            label="Manage Holdings"
+            active={activeTab === 'holdings_edit'}
+            onClick={() => setActiveTab('holdings_edit')}
           />
           <NavItem
             icon={<MessageSquare size={20} />}
@@ -293,8 +333,8 @@ export default function App() {
             </button>
             <div className="flex items-center gap-3 pl-6 border-l border-[var(--border)]">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold">Alex Chen</p>
-                <p className="text-[10px] opacity-40 uppercase tracking-widest">Premium Plan</p>
+                <p className="text-xs font-bold">{user?.username || 'Loading...'}</p>
+                <p className="text-[10px] opacity-40 uppercase tracking-widest">{user?.accountPlan || 'Standard account'}</p>
               </div>
               <UserCircle size={32} className="opacity-60" />
             </div>
@@ -314,7 +354,7 @@ export default function App() {
 
               <section>
                 <h2 className="text-xs font-mono uppercase opacity-40 mb-4 tracking-widest">Portfolio Overview</h2>
-                <Portfolio holdings={holdings} />
+                <Portfolio holdings={holdings} onManageClick={() => setActiveTab('holdings_edit')} />
               </section>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -328,26 +368,35 @@ export default function App() {
                     </div>
                   </div>
                   <div className="glass-panel flex-1 min-h-[400px] p-4 flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl font-bold">{selectedAsset.symbol}</span>
-                        <span className="text-sm opacity-40">{selectedAsset.name}</span>
-                        {!isLoading && tickerSummaries.find(s => s.ticker === selectedAsset.symbol) && (
-                          <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">LIVE</span>
-                        )}
+                    {selectedAsset ? (
+                      <>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl font-bold">{selectedAsset.symbol}</span>
+                            <span className="text-sm opacity-40">{selectedAsset.name}</span>
+                            {!isLoading && tickerSummaries.find(s => s.ticker === selectedAsset.symbol) && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">LIVE</span>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-mono">{displayPrice.toFixed(2)}</p>
+                            <p className={cn("text-xs font-mono", displayChange >= 0 ? "text-green-400" : "text-red-400")}>
+                              {displayChange >= 0 ? '+' : ''}{displayChange.toFixed(2)} ({displayChangePercent >= 0 ? '+' : ''}{displayChangePercent.toFixed(2)}%)
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-h-0 relative w-full">
+                          <div className="absolute inset-0">
+                            <CandlestickChart data={chartData} containerId="main-chart" theme={theme} />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center opacity-40">
+                        <Loader2 className="animate-spin mr-2" size={16} />
+                        <span>Initializing market data...</span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-mono">{displayPrice.toFixed(2)}</p>
-                        <p className={cn("text-xs font-mono", displayChange >= 0 ? "text-green-400" : "text-red-400")}>
-                          {displayChange >= 0 ? '+' : ''}{displayChange.toFixed(2)} ({displayChangePercent >= 0 ? '+' : ''}{displayChangePercent.toFixed(2)}%)
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-h-0 relative w-full">
-                      <div className="absolute inset-0">
-                        <CandlestickChart data={chartData} containerId="main-chart" theme={theme} />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
@@ -364,44 +413,56 @@ export default function App() {
               </div>
 
               <section>
-                <MarketSummary theme={theme} tickerSummaries={tickerSummaries} isLoading={isLoading} />
+                <MarketSummary theme={theme} assets={assets} isLoading={isLoading} />
               </section>
             </div>
           )}
 
           {activeTab === 'watchlist' && (
             <div className="flex-1 flex overflow-hidden">
-              <div className="w-80 border-r border-[var(--border)] glass-panel border-none">
+              <div className="w-80 h-full border-r border-[var(--border)] glass-panel border-none flex flex-col">
                 <Watchlist
                   assets={assets}
                   onSelect={handleSelectAsset}
-                  selectedId={selectedAsset.id}
+                  selectedId={selectedAsset?.id || ''}
+                  currentPage={watchlistPage}
+                  totalPages={watchlistTotalPages}
+                  onPageChange={(page) => loadWatchlistPage(page)}
                 />
               </div>
               <div className="flex-1 p-8 flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold">{selectedAsset.name}</h2>
-                    <span className="px-2 py-1 bg-[var(--foreground)]/5 border border-[var(--border)] text-[10px] uppercase font-mono">{selectedAsset.type}</span>
-                    {tickerSummaries.find(s => s.ticker === selectedAsset.symbol) && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">LIVE</span>
-                    )}
-                  </div>
-                  <button className="glass-button px-6 py-2 text-sm">Trade</button>
-                </div>
-                <div className="glass-panel flex-1 p-6 flex flex-col">
-                  <div className="flex-1 min-h-0 relative w-full">
-                    <div className="absolute inset-0">
-                      <CandlestickChart data={chartData} containerId="watchlist-chart" theme={theme} />
+                {selectedAsset ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-bold">{selectedAsset.name}</h2>
+                        <span className="px-2 py-1 bg-[var(--foreground)]/5 border border-[var(--border)] text-[10px] uppercase font-mono">{selectedAsset.type}</span>
+                        {tickerSummaries.find(s => s.ticker === selectedAsset.symbol) && (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">LIVE</span>
+                        )}
+                      </div>
+                      <button className="glass-button px-6 py-2 text-sm">Trade</button>
                     </div>
+                    <div className="glass-panel flex-1 p-6 flex flex-col">
+                      <div className="flex-1 min-h-0 relative w-full">
+                        <div className="absolute inset-0">
+                          <CandlestickChart data={chartData} containerId="watchlist-chart" theme={theme} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                      <StatBox label="Latest Price" value={`$${displayPrice.toFixed(2)}`} />
+                      <StatBox label="Change" value={`${displayChange >= 0 ? '+' : ''}${displayChangePercent.toFixed(2)}%`} positive={displayChange >= 0} />
+                      <StatBox label="Day High" value={selectedSummary ? `$${selectedSummary.dayHigh.toFixed(2)}` : '—'} />
+                      <StatBox label="Day Low" value={selectedSummary ? `$${selectedSummary.dayLow.toFixed(2)}` : '—'} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center opacity-40">
+                    <Loader2 className="animate-spin mr-2" size={16} />
+                    <span>Loading asset details...</span>
                   </div>
-                </div>
-                <div className="grid grid-cols-4 gap-4">
-                  <StatBox label="Latest Price" value={`$${displayPrice.toFixed(2)}`} />
-                  <StatBox label="Change" value={`${displayChange >= 0 ? '+' : ''}${displayChangePercent.toFixed(2)}%`} positive={displayChange >= 0} />
-                  <StatBox label="Day High" value={selectedSummary ? `$${selectedSummary.dayHigh.toFixed(2)}` : '—'} />
-                  <StatBox label="Day Low" value={selectedSummary ? `$${selectedSummary.dayLow.toFixed(2)}` : '—'} />
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -429,6 +490,15 @@ export default function App() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'holdings_edit' && (
+            <HoldingsEditor
+              assets={assets}
+              holdings={holdings}
+              onRefresh={loadInitialData}
+              isLoading={isLoading}
+            />
           )}
         </div>
       </main>
