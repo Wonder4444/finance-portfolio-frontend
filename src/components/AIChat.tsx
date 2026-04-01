@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -19,6 +19,15 @@ export const AIChat: React.FC = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -77,7 +86,7 @@ export const AIChat: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full glass-panel border-none">
+    <div className="flex flex-col h-full overflow-hidden glass-panel border-none">
       <div className="p-4 border-b border-[var(--border)] flex items-center gap-2">
         <Bot size={20} className="text-blue-400" />
         <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">
@@ -132,6 +141,7 @@ export const AIChat: React.FC = () => {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 border-t border-[var(--border)]">

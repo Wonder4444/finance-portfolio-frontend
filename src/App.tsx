@@ -572,9 +572,9 @@ export default function App() {
           )}
 
           {activeTab === 'ai' && (
-            <div className="flex-1 p-8 flex flex-col">
-              <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col gap-6">
-                <div className="flex flex-col gap-1">
+            <div className="flex-1 p-8 flex flex-col min-h-0">
+              <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col gap-6 min-h-0">
+                <div className="flex flex-col gap-1 shrink-0">
                   <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">{t('aiAdvisor')}</h2>
                   <p className="text-sm opacity-40 font-mono">{t('aiAdvisorDescription')}</p>
                 </div>
