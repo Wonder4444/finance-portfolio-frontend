@@ -37,7 +37,14 @@ export const AIChat: React.FC = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState("");
+  const [selectedModel, setSelectedModel] = useState("llama3.2");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const MODELS = [
+    { id: "llama3.2", label: "LLAMA_3_2" },
+    { id: "gpt-oss:120b-cloud", label: "GPT_OSS" },
+    { id: "kimi-k2.5:cloud", label: "KIMI_K2_5" },
+  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,6 +75,7 @@ export const AIChat: React.FC = () => {
         },
         body: JSON.stringify({
           userId: 2,
+          model: selectedModel,
           chatId: chatId,
           message: input,
         }),
@@ -366,6 +374,22 @@ export const AIChat: React.FC = () => {
       </div>
 
       <div className="p-4 border-t border-[var(--border)]">
+        <div className="flex gap-2 mb-3">
+          {MODELS.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setSelectedModel(m.id)}
+              className={cn(
+                "px-3 py-1.5 text-xs rounded-full border transition-colors",
+                selectedModel === m.id
+                  ? "bg-blue-500/20 text-blue-500 border-blue-500/50"
+                  : "bg-[var(--foreground)]/5 text-[var(--foreground)]/70 hover:text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--foreground)]/10",
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-3">
           <input
             type="text"
