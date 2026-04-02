@@ -254,15 +254,21 @@ export default function App() {
   const loadInitialData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [tickerDataMap, backendAssets, backendHoldings, userData, watchlistRecords, assetMap] =
-        await Promise.all([
-          fetchAllTickers(),
-          getBackendAssets(),
-          getBackendHoldings(),
-          getUser(2),
-          getWatchlistByUser(2),
-          getBackendAssetMap(),
-        ]);
+      const [
+        tickerDataMap,
+        backendAssets,
+        backendHoldings,
+        userData,
+        watchlistRecords,
+        assetMap,
+      ] = await Promise.all([
+        fetchAllTickers(),
+        getBackendAssets(),
+        getBackendHoldings(),
+        getUser(2),
+        getWatchlistByUser(2),
+        getBackendAssetMap(),
+      ]);
 
       const summaries: TickerSummary[] = [];
       const newChartMap = new Map<string, OHLCBar[]>();
@@ -446,43 +452,40 @@ export default function App() {
       .slice(0, 20);
   }, [watchlistSearchQuery, allAssets, favoriteAssets]);
 
-  const handleAddFavorite = useCallback(
-    async (asset: Asset) => {
-      const assetId = Number(String(asset.id).replace(/^backend-/, ""));
-      if (!Number.isFinite(assetId)) {
-        console.error(`Invalid asset id for watchlist add: ${asset.id}`);
-        return;
-      }
+  const handleAddFavorite = useCallback(async (asset: Asset) => {
+    const assetId = Number(String(asset.id).replace(/^backend-/, ""));
+    if (!Number.isFinite(assetId)) {
+      console.error(`Invalid asset id for watchlist add: ${asset.id}`);
+      return;
+    }
 
-      const ok = await addFavoriteAsset(2, assetId);
-      if (!ok) {
-        console.error(`Failed to add favorite asset: ${asset.symbol}`);
-        return;
-      }
+    const ok = await addFavoriteAsset(2, assetId);
+    if (!ok) {
+      console.error(`Failed to add favorite asset: ${asset.symbol}`);
+      return;
+    }
 
-      const watchlistRecords = await getWatchlistByUser(2);
-      const created = watchlistRecords.find((r) => r.assetId === assetId);
-      if (created) {
-        setWatchlistRecordIdBySymbol((prev) => {
-          const next = new Map(prev);
-          next.set(asset.symbol, created.id);
-          return next;
-        });
-      }
-
-      setFavoriteAssets((prev) => {
-        if (prev.some((a) => a.symbol === asset.symbol)) return prev;
-        return [...prev, asset];
+    const watchlistRecords = await getWatchlistByUser(2);
+    const created = watchlistRecords.find((r) => r.assetId === assetId);
+    if (created) {
+      setWatchlistRecordIdBySymbol((prev) => {
+        const next = new Map(prev);
+        next.set(asset.symbol, created.id);
+        return next;
       });
-      setAssets((prev) => {
-        if (prev.some((a) => a.symbol === asset.symbol)) return prev;
-        return [...prev, asset];
-      });
-      setSelectedAsset((prev) => prev ?? asset);
-      setWatchlistSearchQuery("");
-    },
-    [],
-  );
+    }
+
+    setFavoriteAssets((prev) => {
+      if (prev.some((a) => a.symbol === asset.symbol)) return prev;
+      return [...prev, asset];
+    });
+    setAssets((prev) => {
+      if (prev.some((a) => a.symbol === asset.symbol)) return prev;
+      return [...prev, asset];
+    });
+    setSelectedAsset((prev) => prev ?? asset);
+    setWatchlistSearchQuery("");
+  }, []);
 
   const handleRemoveFavorite = useCallback(
     async (asset: Asset) => {
@@ -973,17 +976,17 @@ export default function App() {
           )}
 
           {activeTab === "ai" && (
-            <div className="flex-1 p-8 flex flex-col">
-              <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col gap-6">
-                <div className="flex flex-col gap-1">
-                  <h2 className="text-3xl font-bold tracking-tighter uppercase font-mono">
+            <div className="flex-1 p-4 md:p-8 flex flex-col min-h-0">
+              <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col gap-6 min-h-0">
+                <div className="flex flex-col gap-1 shrink-0">
+                  <h2 className="text-2xl md:text-3xl font-bold tracking-tighter uppercase font-mono">
                     {t("aiAdvisor")}
                   </h2>
-                  <p className="text-sm opacity-40 font-mono">
+                  <p className="text-xs md:text-sm opacity-40 font-mono">
                     {t("aiAdvisorDescription")}
                   </p>
                 </div>
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 relative">
                   <AIChat />
                 </div>
               </div>

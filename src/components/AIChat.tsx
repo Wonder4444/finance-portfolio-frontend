@@ -113,18 +113,18 @@ export const AIChat: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden glass-panel border-none relative">
+    <div className="absolute inset-0 flex flex-col overflow-hidden glass-panel border-none">
       {!hasAgreed && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[var(--background)]/80 backdrop-blur-sm p-4">
-          <div className="glass-panel p-6 max-w-md w-full border border-[var(--border)]/50 shadow-2xl flex flex-col gap-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
+          <div className="glass-panel p-6 max-w-md w-full border border-[var(--border)]/50 shadow-2xl flex flex-col gap-4 max-h-[90%] overflow-y-auto">
+            <h3 className="text-lg font-semibold flex items-center gap-2 shrink-0">
               <span className="text-yellow-500 text-xl">⚠️</span>{" "}
               {t("aiPrivacyTitle")}
             </h3>
-            <p className="text-sm text-[var(--foreground)]/80 leading-relaxed">
+            <p className="text-sm text-[var(--foreground)]/80 leading-relaxed overflow-y-auto">
               {t("aiPrivacyWarning")}
             </p>
-            <div className="flex justify-end gap-3 mt-4">
+            <div className="flex justify-end gap-3 mt-4 shrink-0">
               <button
                 onClick={() => setHasAgreed(true)}
                 className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
@@ -235,16 +235,22 @@ export const AIChat: React.FC = () => {
                             isJsonLang &&
                             parsed &&
                             typeof parsed === "object" &&
-                            typeof parsed.type === "string" &&
-                            Array.isArray(parsed.data)
+                            typeof parsed.type === "string"
                           ) {
-                            if (
-                              ["bar", "line", "pie", "area"].includes(
-                                parsed.type.toLowerCase(),
-                              )
-                            ) {
-                              config = parsed;
-                              isChart = true;
+                            const isNewFormat =
+                              Array.isArray(parsed.series) &&
+                              Array.isArray(parsed.categories);
+                            const isOldFormat = Array.isArray(parsed.data);
+
+                            if (isNewFormat || isOldFormat) {
+                              if (
+                                ["bar", "line", "pie", "area"].includes(
+                                  parsed.type.toLowerCase(),
+                                )
+                              ) {
+                                config = parsed;
+                                isChart = true;
+                              }
                             }
                           }
                         } catch (e) {
@@ -255,39 +261,141 @@ export const AIChat: React.FC = () => {
                       if (isChart && config) {
                         try {
                           const type = (config.type || "line").toLowerCase();
-                          const data = config.data || [];
-                          const xKey = config.xKey || "name";
-                          const yKeys =
+                          let data = config.data || [];
+                          let xKey = config.xKey || "name";
+                          let yKeys =
                             config.yKeys ||
                             (config.yKey ? [config.yKey] : ["value"]);
+                          const isStacked = config.stacked === true;
+                          const orientation = config.orientation || "vertical";
+
+                          // Handle new format (series/categories)
+                          if (
+                            config.series &&
+                            config.categories &&
+                            Array.isArray(config.series) &&
+                            Array.isArray(config.categories)
+                          ) {
+                            xKey = "category";
+                            yKeys = config.series.map((s: any) => s.name);
+                            data = config.categories.map(
+                              (cat: string, catIdx: number) => {
+                                const entry: any = { category: cat };
+                                config.series.forEach((s: any) => {
+                                  if (Array.isArray(s.value)) {
+                                    entry[s.name] = s.value[catIdx];
+                                  } else {
+                                    // Fallback for single value or if value is just a number
+                                    entry[s.name] = s.value;
+                                  }
+                                });
+                                return entry;
+                              },
+                            );
+                          } else if (
+                            config.series &&
+                            !config.categories &&
+                            type === "pie"
+                          ) {
+                            // Special case for pie chart with series format
+                            data = config.series;
+                            xKey = "name";
+                            yKeys = ["value"];
+                          }
 
                           return (
-                            <div className="h-[250px] w-full my-4 bg-[var(--background)] p-4 rounded border border-[var(--border)] overflow-hidden">
-                              <ResponsiveContainer width="100%" height="100%">
+                            <div className="h-[300px] w-full my-4 bg-[var(--background)] p-4 rounded border border-[var(--border)] overflow-hidden">
+                              {config.title && (
+                                <div className="text-xs font-semibold mb-2 opacity-70 text-center">
+                                  {config.title}
+                                </div>
+                              )}
+                              <ResponsiveContainer
+                                width="100%"
+                                height={config.title ? "90%" : "100%"}
+                              >
                                 {type === "bar" ? (
-                                  <BarChart data={data}>
+                                  <BarChart
+                                    data={data}
+                                    layout={
+                                      orientation === "horizontal"
+                                        ? "vertical"
+                                        : "horizontal"
+                                    }
+                                  >
                                     <CartesianGrid
                                       strokeDasharray="3 3"
-                                      opacity={0.2}
+                                      opacity={0.1}
+                                      vertical={orientation === "horizontal"}
+                                      horizontal={orientation !== "horizontal"}
                                     />
                                     <XAxis
-                                      dataKey={xKey}
-                                      tick={{ fontSize: 12 }}
+                                      type={
+                                        orientation === "horizontal"
+                                          ? "number"
+                                          : "category"
+                                      }
+                                      dataKey={
+                                        orientation === "horizontal"
+                                          ? undefined
+                                          : xKey
+                                      }
+                                      tick={{ fontSize: 10 }}
+                                      hide={false}
                                     />
-                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <YAxis
+                                      type={
+                                        orientation === "horizontal"
+                                          ? "category"
+                                          : "number"
+                                      }
+                                      dataKey={
+                                        orientation === "horizontal"
+                                          ? xKey
+                                          : undefined
+                                      }
+                                      tick={{ fontSize: 10 }}
+                                      label={
+                                        config.yAxis?.label
+                                          ? {
+                                              value: config.yAxis.label,
+                                              angle: -90,
+                                              position: "insideLeft",
+                                              style: {
+                                                fontSize: 10,
+                                                fill: "var(--foreground)",
+                                                opacity: 0.5,
+                                              },
+                                            }
+                                          : undefined
+                                      }
+                                      domain={[
+                                        config.yAxis?.min ?? "auto",
+                                        config.yAxis?.max ?? "auto",
+                                      ]}
+                                    />
                                     <RechartsTooltip
                                       contentStyle={{
                                         backgroundColor: "var(--background)",
                                         borderColor: "var(--border)",
                                         color: "var(--foreground)",
+                                        fontSize: "12px",
+                                        borderRadius: "8px",
                                       }}
                                     />
-                                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                                    <Legend
+                                      wrapperStyle={{
+                                        fontSize: 10,
+                                        paddingTop: 10,
+                                      }}
+                                    />
                                     {yKeys.map((key: string, idx: number) => (
                                       <Bar
                                         key={key}
                                         dataKey={key}
+                                        stackId={isStacked ? "a" : undefined}
                                         fill={COLORS[idx % COLORS.length]}
+                                        radius={isStacked ? 0 : [4, 4, 0, 0]}
                                       />
                                     ))}
                                   </BarChart>
@@ -300,7 +408,7 @@ export const AIChat: React.FC = () => {
                                       cx="50%"
                                       cy="50%"
                                       outerRadius={80}
-                                      label={{ fontSize: 12 }}
+                                      label={{ fontSize: 10 }}
                                     >
                                       {data.map((_: any, idx: number) => (
                                         <Cell
@@ -314,36 +422,63 @@ export const AIChat: React.FC = () => {
                                         backgroundColor: "var(--background)",
                                         borderColor: "var(--border)",
                                         color: "var(--foreground)",
+                                        fontSize: "12px",
+                                        borderRadius: "8px",
                                       }}
                                     />
-                                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                                    <Legend wrapperStyle={{ fontSize: 10 }} />
                                   </PieChart>
                                 ) : (
                                   <LineChart data={data}>
                                     <CartesianGrid
                                       strokeDasharray="3 3"
-                                      opacity={0.2}
+                                      opacity={0.1}
                                     />
                                     <XAxis
                                       dataKey={xKey}
-                                      tick={{ fontSize: 12 }}
+                                      tick={{ fontSize: 10 }}
                                     />
-                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <YAxis
+                                      tick={{ fontSize: 10 }}
+                                      label={
+                                        config.yAxis?.label
+                                          ? {
+                                              value: config.yAxis.label,
+                                              angle: -90,
+                                              position: "insideLeft",
+                                              style: {
+                                                fontSize: 10,
+                                                fill: "var(--foreground)",
+                                                opacity: 0.5,
+                                              },
+                                            }
+                                          : undefined
+                                      }
+                                    />
                                     <RechartsTooltip
                                       contentStyle={{
                                         backgroundColor: "var(--background)",
                                         borderColor: "var(--border)",
                                         color: "var(--foreground)",
+                                        fontSize: "12px",
+                                        borderRadius: "8px",
                                       }}
                                     />
-                                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                                    <Legend
+                                      wrapperStyle={{
+                                        fontSize: 10,
+                                        paddingTop: 10,
+                                      }}
+                                    />
                                     {yKeys.map((key: string, idx: number) => (
                                       <Line
                                         key={key}
                                         type="monotone"
                                         dataKey={key}
                                         stroke={COLORS[idx % COLORS.length]}
-                                        activeDot={{ r: 8 }}
+                                        strokeWidth={2}
+                                        dot={{ r: 3 }}
+                                        activeDot={{ r: 5 }}
                                       />
                                     ))}
                                   </LineChart>
@@ -352,9 +487,13 @@ export const AIChat: React.FC = () => {
                             </div>
                           );
                         } catch (e) {
+                          console.error("Chart render error:", e);
                           return (
                             <div className="bg-red-500/10 border border-red-500 p-2 text-red-500 rounded my-2 text-xs">
-                              Failed to render chart: Invalid JSON configuration
+                              Failed to render chart:{" "}
+                              {e instanceof Error
+                                ? e.message
+                                : "Invalid configuration"}
                             </div>
                           );
                         }
@@ -363,8 +502,7 @@ export const AIChat: React.FC = () => {
                         <code
                           className={className}
                           style={{
-                            backgroundColor: "var(--foreground)",
-                            color: "var(--background)",
+                            backgroundColor: "rgba(0,0,0,0.1)",
                             padding: "0.2rem 0.4rem",
                             borderRadius: "0.2rem",
                             fontSize: "0.875rem",
