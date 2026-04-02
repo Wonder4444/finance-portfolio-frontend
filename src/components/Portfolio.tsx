@@ -9,24 +9,17 @@ import { AssetDetailModal } from './AssetDetailModal';
 interface PortfolioProps {
   holdings: Holding[];
   onManageClick?: () => void;
+  onAssetClick?: (symbol: string) => void;
   theme?: 'light' | 'dark';
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, theme = 'dark' }) => {
+export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, onAssetClick, theme = 'dark' }) => {
   const { t } = useTranslation();
   const totalValue = holdings.reduce((acc, h) => acc + h.totalValue, 0);
   const totalProfit = holdings.reduce((acc, h) => acc + h.profit, 0);
   const totalProfitPercent = (totalValue - totalProfit) !== 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
-
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleAssetClick = (asset: Asset) => {
-    setSelectedAsset(asset);
-    setIsModalOpen(true);
-  };
 
   const [activeIndex, setActiveIndex] = useState(-1);
 
@@ -110,6 +103,8 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, t
                                 startAngle={startAngle}
                                 endAngle={endAngle}
                                 fill={fill}
+                                onClick={() => onAssetClick?.(props.payload.name)}
+                                className="cursor-pointer"
                             />
                         </g>
                     );
@@ -117,6 +112,11 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, t
                   data={chartData}
                   onMouseEnter={onPieEnter}
                   onMouseLeave={onPieLeave}
+                  onClick={(data) => {
+                    if (data && data.activePayload && data.activePayload[0]) {
+                        onAssetClick?.(data.activePayload[0].name);
+                    }
+                  }}
                   cx="50%"
                   cy="50%"
                   innerRadius={65}
@@ -168,7 +168,10 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, t
 
             {/* Float Tooltip (Fixed Position to avoid overlap) */}
             {activeData && (
-                <div className="absolute top-0 right-0 bg-slate-900/95 border border-white/20 p-3 shadow-2xl z-[100] min-w-[160px] animate-in slide-in-from-right-2 fade-in duration-200 backdrop-blur-md rounded-xl pointer-events-none">
+                <div 
+                    className="absolute top-0 right-0 bg-slate-900/95 border border-white/20 p-3 shadow-2xl z-[100] min-w-[160px] animate-in slide-in-from-right-2 fade-in duration-200 backdrop-blur-md rounded-xl cursor-pointer"
+                    onClick={() => onAssetClick?.(activeData.name)}
+                >
                     <div className="flex items-center justify-between mb-1">
                         <p className="font-bold text-sm leading-none text-white tracking-tight">{activeData.name}</p>
                         <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded font-mono font-bold leading-none">
@@ -181,6 +184,9 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, t
                             <span className="text-white/40 uppercase font-mono tracking-widest whitespace-nowrap">Balance</span>
                             <span className="text-white font-mono font-bold ml-auto">{formatCurrency(activeData.value)}</span>
                         </div>
+                    </div>
+                    <div className="mt-2 text-[8px] text-blue-400 font-mono uppercase tracking-[0.2em] text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        Click for terminal view
                     </div>
                 </div>
             )}
@@ -203,7 +209,7 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, t
                   <td className="p-3">
                     <div 
                       className="flex flex-col cursor-pointer group-hover:text-blue-400 transition-colors"
-                      onClick={() => handleAssetClick(h)}
+                      onClick={() => onAssetClick?.(h.symbol)}
                     >
                       <span className="font-bold border-b border-transparent group-hover:border-blue-400/30 w-fit">{h.symbol}</span>
                       <span className="opacity-40 text-[10px]">{h.name}</span>
@@ -223,13 +229,6 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, t
           </table>
         </div>
       </div>
-      
-      <AssetDetailModal 
-        asset={selectedAsset}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        theme={theme}
-      />
     </div>
   );
 };

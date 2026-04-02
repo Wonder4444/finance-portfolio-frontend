@@ -22,10 +22,11 @@ interface HoldingsEditorProps {
     assets: Asset[];
     holdings: Holding[];
     onRefresh: () => void;
+    onAssetClick?: (symbol: string) => void;
     isLoading?: boolean;
 }
 
-export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: HoldingsEditorProps) {
+export function HoldingsEditor({ assets, holdings, onRefresh, onAssetClick, isLoading }: HoldingsEditorProps) {
     const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -288,10 +289,15 @@ export function HoldingsEditor({ assets, holdings, onRefresh, isLoading }: Holdi
                                             >
                                                 <Star size={16} fill={pinnedHoldings.includes(h.id) ? "currentColor" : "none"} />
                                             </button>
-                                            <div className="flex flex-col">
-                                                <span className="font-bold tracking-tight text-base leading-none mb-1">{h.symbol}</span>
+                                            <button 
+                                                onClick={() => onAssetClick?.(h.symbol)}
+                                                className="flex flex-col text-left hover:text-blue-500 transition-colors group/asset"
+                                            >
+                                                <span className="font-bold tracking-tight text-base leading-none mb-1 flex items-center gap-1.5 underline-offset-4 decoration-blue-500/30 group-hover/asset:underline">
+                                                    {h.symbol}
+                                                </span>
                                                 <span className="text-[10px] opacity-40 uppercase tracking-wider">{h.name}</span>
-                                            </div>
+                                            </button>
                                         </div>
                                     </td>
                                     <td className="p-4 font-mono">

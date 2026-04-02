@@ -49,6 +49,7 @@ import {
   removeFavoriteAsset,
 } from "./services/backendApi";
 import { HoldingsEditor } from "./components/HoldingsEditor";
+import { AssetDetailModal } from "./components/AssetDetailModal";
 
 // Static fund fallbacks (not available from the stock API or current backend)
 const STATIC_FUND_ASSETS: Asset[] = [
@@ -249,6 +250,21 @@ export default function App() {
   const [rawChartDataMap, setRawChartDataMap] = useState<
     Map<string, RawPriceData>
   >(new Map());
+
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [assetModalAsset, setAssetModalAsset] = useState<Asset | null>(null);
+
+  const openAssetModal = (symbol: string) => {
+    // Try finding in allAssets first, then holdings
+    const asset = allAssets.find(a => a.symbol === symbol) || 
+                  holdings.find(h => h.symbol === symbol);
+    
+    if (asset) {
+      // Map holding format to Asset if needed (they are mostly compatible)
+      setAssetModalAsset(asset as Asset);
+      setIsAssetModalOpen(true);
+    }
+  };
 
   // Fetch live prices and initial data
   const loadInitialData = useCallback(async () => {
@@ -594,16 +610,16 @@ export default function App() {
             onClick={() => setActiveTab("watchlist")}
           />
           <NavItem
-            icon={<Newspaper size={20} />}
-            label={t("news")}
-            active={activeTab === "news"}
-            onClick={() => setActiveTab("news")}
-          />
-          <NavItem
             icon={<TrendingUp size={20} />}
             label={t("manageHoldings")}
             active={activeTab === "holdings_edit"}
             onClick={() => setActiveTab("holdings_edit")}
+          />
+          <NavItem
+            icon={<Newspaper size={20} />}
+            label={t("news")}
+            active={activeTab === "news"}
+            onClick={() => setActiveTab("news")}
           />
           <NavItem
             icon={<MessageSquare size={20} />}
@@ -693,6 +709,7 @@ export default function App() {
                 <Portfolio
                   holdings={holdings}
                   onManageClick={() => setActiveTab("holdings_edit")}
+                  onAssetClick={openAssetModal}
                   theme={theme}
                 />
               </section>
@@ -998,11 +1015,19 @@ export default function App() {
               assets={assets}
               holdings={holdings}
               onRefresh={loadInitialData}
+              onAssetClick={openAssetModal}
               isLoading={isLoading}
             />
           )}
         </div>
       </main>
+
+      <AssetDetailModal 
+        asset={assetModalAsset}
+        isOpen={isAssetModalOpen}
+        onClose={() => setIsAssetModalOpen(false)}
+        theme={theme}
+      />
     </div>
   );
 }
