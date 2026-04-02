@@ -23,6 +23,8 @@ export interface NewsItem {
   title: string;
   category: string;
   link?: string;
+  summary?: string;
+  impact?: "positive" | "negative" | "neutral" | string;
 }
 
 export interface ChatMessage {
