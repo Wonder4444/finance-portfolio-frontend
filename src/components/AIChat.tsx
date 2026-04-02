@@ -38,6 +38,7 @@ export const AIChat: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState("");
   const [selectedModel, setSelectedModel] = useState("llama3.2");
+  const [hasAgreed, setHasAgreed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const MODELS = [
@@ -112,7 +113,29 @@ export const AIChat: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden glass-panel border-none">
+    <div className="flex flex-col h-full overflow-hidden glass-panel border-none relative">
+      {!hasAgreed && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[var(--background)]/80 backdrop-blur-sm p-4">
+          <div className="glass-panel p-6 max-w-md w-full border border-[var(--border)]/50 shadow-2xl flex flex-col gap-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <span className="text-yellow-500 text-xl">⚠️</span>{" "}
+              {t("aiPrivacyTitle")}
+            </h3>
+            <p className="text-sm text-[var(--foreground)]/80 leading-relaxed">
+              {t("aiPrivacyWarning")}
+            </p>
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setHasAgreed(true)}
+                className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+              >
+                {t("agree")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         {messages.map((msg, i) => (
           <div

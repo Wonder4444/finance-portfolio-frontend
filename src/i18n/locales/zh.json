@@ -67,5 +67,9 @@
     "initializingMarketData": "正在初始化市场数据...",
     "loadingAssetDetails": "正在加载资产详情...",
     "aiAdvisorDescription": "讨论您的投资策略、分析资产或获取市场洞察。",
-    "marketAnomalies": "市场异动"
+    "marketAnomalies": "市场异动",
+    "aiPrivacyTitle": "隐私警告",
+    "aiPrivacyWarning": "Ollama 在本地服务器运行，而另外两个模型在云端运行。使用 AI 聊天功能意味着您的数据将发送给相应的 LLM（本地服务器或云端 LLM）。云端 LLM 会提供更好的体验。用户须自行承担风险并对自己负责。只有同意此条款的用户才能使用聊天功能。",
+    "agree": "同意",
+    "disagree": "不同意"
 }
