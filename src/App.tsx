@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   LayoutDashboard,
   BarChart3,
   Newspaper,
   MessageSquare,
-  Search,
   Bell,
   UserCircle,
   TrendingUp,
@@ -41,10 +40,13 @@ import {
 import { fetchYahooNews } from "./services/newsApi";
 
 import {
+  addFavoriteAsset,
+  getBackendAssetMap,
   getBackendAssets,
-  getBackendAssetsPaginated,
   getBackendHoldings,
   getUser,
+  getWatchlistByUser,
+  removeFavoriteAsset,
 } from "./services/backendApi";
 import { HoldingsEditor } from "./components/HoldingsEditor";
 
@@ -230,8 +232,12 @@ export default function App() {
   );
   const [tickerSummaries, setTickerSummaries] = useState<TickerSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [watchlistPage, setWatchlistPage] = useState(1);
-  const [watchlistTotalPages, setWatchlistTotalPages] = useState(1);
+  const [allAssets, setAllAssets] = useState<Asset[]>([]);
+  const [favoriteAssets, setFavoriteAssets] = useState<Asset[]>([]);
+  const [watchlistRecordIdBySymbol, setWatchlistRecordIdBySymbol] = useState<
+    Map<string, number>
+  >(new Map());
+  const [watchlistSearchQuery, setWatchlistSearchQuery] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("theme");
     return (saved as "light" | "dark") || "dark";
@@ -244,31 +250,18 @@ export default function App() {
     Map<string, RawPriceData>
   >(new Map());
 
-  // Fetch live data from the Portfolio Manager API and backend database
-  const updateAssetsState = useCallback(
-    (backendAssets: Asset[], summaries: TickerSummary[]) => {
-      const updatedAssets = updatedAssetsFromBackend(backendAssets, summaries);
-      const allAssets = [...updatedAssets, ...STATIC_FUND_ASSETS];
-      setAssets(allAssets);
-
-      // Set initial selected asset and chart if not already set
-      if (allAssets.length > 0 && !selectedAsset) {
-        setSelectedAsset(allAssets[0]);
-      }
-    },
-    [selectedAsset],
-  );
-
   // Fetch live prices and initial data
   const loadInitialData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [tickerDataMap, paginatedAssets, backendHoldings, userData] =
+      const [tickerDataMap, backendAssets, backendHoldings, userData, watchlistRecords, assetMap] =
         await Promise.all([
           fetchAllTickers(),
-          getBackendAssetsPaginated(1, 20),
+          getBackendAssets(),
           getBackendHoldings(),
           getUser(2),
+          getWatchlistByUser(2),
+          getBackendAssetMap(),
         ]);
 
       const summaries: TickerSummary[] = [];
@@ -283,7 +276,7 @@ export default function App() {
       }
 
       const cryptoSymbols = new Set<string>();
-      paginatedAssets.records.forEach((asset) => {
+      backendAssets.forEach((asset) => {
         if (asset.type === "crypto" || isCryptoSymbol(asset.symbol)) {
           cryptoSymbols.add(asset.symbol);
         }
@@ -315,68 +308,46 @@ export default function App() {
       setTickerSummaries(mergedSummaries);
       setChartDataMap(newChartMap);
       setRawChartDataMap(tickerDataMap);
-      setWatchlistPage(paginatedAssets.current);
-      setWatchlistTotalPages(paginatedAssets.pages);
       setHoldings(
         updateHoldingsWithLivePrices(backendHoldings, mergedSummaries),
       );
       setUser(userData);
 
-      updateAssetsState(paginatedAssets.records, mergedSummaries);
+      const updatedAssets = updatedAssetsFromBackend(backendAssets, summaries);
+      const mergedAllAssets = [...updatedAssets, ...STATIC_FUND_ASSETS];
+      setAllAssets(mergedAllAssets);
 
-      // Auto-select first asset chart
-      if (paginatedAssets.records.length > 0) {
-        const firstChart = newChartMap.get(paginatedAssets.records[0].symbol);
-        if (firstChart && !selectedAsset) setChartData(firstChart);
+      const recordIdBySymbol = new Map<string, number>();
+      watchlistRecords.forEach((record) => {
+        if (record.symbol) {
+          recordIdBySymbol.set(record.symbol, record.id);
+        } else {
+          const mapped = assetMap.get(`backend-${record.assetId}`);
+          if (mapped) {
+            recordIdBySymbol.set(mapped.symbol, record.id);
+          }
+        }
+      });
+
+      const initialFavorites = mergedAllAssets.filter((asset) =>
+        recordIdBySymbol.has(asset.symbol),
+      );
+
+      setWatchlistRecordIdBySymbol(recordIdBySymbol);
+      setFavoriteAssets(initialFavorites);
+      setAssets(initialFavorites);
+
+      if (!selectedAsset && initialFavorites.length > 0) {
+        setSelectedAsset(initialFavorites[0]);
+      } else if (!selectedAsset && mergedAllAssets.length > 0) {
+        setSelectedAsset(mergedAllAssets[0]);
       }
     } catch (err) {
       console.error("Failed to load initial data:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedAsset, updateAssetsState]);
-
-  const loadWatchlistPage = useCallback(
-    async (page: number) => {
-      setIsLoading(true);
-      try {
-        const paginatedAssets = await getBackendAssetsPaginated(page, 20);
-        setWatchlistPage(paginatedAssets.current);
-        setWatchlistTotalPages(paginatedAssets.pages);
-
-        const pageCryptoSymbols = paginatedAssets.records
-          .filter(
-            (asset) => asset.type === "crypto" || isCryptoSymbol(asset.symbol),
-          )
-          .map((asset) => asset.symbol);
-
-        let nextSummaries = tickerSummaries;
-        if (pageCryptoSymbols.length > 0) {
-          try {
-            const cryptoSummaries =
-              await fetchCryptoTickerSummaries(pageCryptoSymbols);
-            const summaryMap = new Map(
-              tickerSummaries.map((summary) => [summary.ticker, summary]),
-            );
-            cryptoSummaries.forEach((summary) => {
-              summaryMap.set(summary.ticker, summary);
-            });
-            nextSummaries = [...summaryMap.values()];
-            setTickerSummaries(nextSummaries);
-          } catch (error) {
-            console.warn("Failed to refresh crypto quotes for page:", error);
-          }
-        }
-
-        updateAssetsState(paginatedAssets.records, nextSummaries);
-      } catch (err) {
-        console.error("Failed to load watchlist page:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [tickerSummaries, updateAssetsState],
-  );
+  }, [selectedAsset]);
 
   useEffect(() => {
     loadInitialData();
@@ -459,6 +430,97 @@ export default function App() {
   const handleSelectAsset = useCallback((asset: Asset) => {
     setSelectedAsset(asset);
   }, []);
+
+  const searchResults = useMemo(() => {
+    const keyword = watchlistSearchQuery.trim().toLowerCase();
+    if (!keyword) return [];
+    const favoriteSymbols = new Set(favoriteAssets.map((a) => a.symbol));
+
+    return allAssets
+      .filter(
+        (asset) =>
+          !favoriteSymbols.has(asset.symbol) &&
+          (asset.symbol.toLowerCase().includes(keyword) ||
+            asset.name.toLowerCase().includes(keyword)),
+      )
+      .slice(0, 20);
+  }, [watchlistSearchQuery, allAssets, favoriteAssets]);
+
+  const handleAddFavorite = useCallback(
+    async (asset: Asset) => {
+      const assetId = Number(String(asset.id).replace(/^backend-/, ""));
+      if (!Number.isFinite(assetId)) {
+        console.error(`Invalid asset id for watchlist add: ${asset.id}`);
+        return;
+      }
+
+      const ok = await addFavoriteAsset(2, assetId);
+      if (!ok) {
+        console.error(`Failed to add favorite asset: ${asset.symbol}`);
+        return;
+      }
+
+      const watchlistRecords = await getWatchlistByUser(2);
+      const created = watchlistRecords.find((r) => r.assetId === assetId);
+      if (created) {
+        setWatchlistRecordIdBySymbol((prev) => {
+          const next = new Map(prev);
+          next.set(asset.symbol, created.id);
+          return next;
+        });
+      }
+
+      setFavoriteAssets((prev) => {
+        if (prev.some((a) => a.symbol === asset.symbol)) return prev;
+        return [...prev, asset];
+      });
+      setAssets((prev) => {
+        if (prev.some((a) => a.symbol === asset.symbol)) return prev;
+        return [...prev, asset];
+      });
+      setSelectedAsset((prev) => prev ?? asset);
+      setWatchlistSearchQuery("");
+    },
+    [],
+  );
+
+  const handleRemoveFavorite = useCallback(
+    async (asset: Asset) => {
+      const previousFavorites = favoriteAssets;
+      const previousSelected = selectedAsset;
+      const recordId = watchlistRecordIdBySymbol.get(asset.symbol);
+
+      const nextFavorites = previousFavorites.filter(
+        (a) => a.symbol !== asset.symbol,
+      );
+
+      setFavoriteAssets(nextFavorites);
+      setAssets(nextFavorites);
+      setWatchlistRecordIdBySymbol((prev) => {
+        const next = new Map(prev);
+        next.delete(asset.symbol);
+        return next;
+      });
+
+      if (previousSelected?.symbol === asset.symbol) {
+        setSelectedAsset(nextFavorites[0] ?? null);
+      }
+
+      const ok = recordId ? await removeFavoriteAsset(recordId) : false;
+      if (!ok) {
+        setFavoriteAssets(previousFavorites);
+        setAssets(previousFavorites);
+        setSelectedAsset(previousSelected);
+        setWatchlistRecordIdBySymbol((prev) => {
+          const next = new Map(prev);
+          if (recordId) next.set(asset.symbol, recordId);
+          return next;
+        });
+        console.error(`Failed to remove favorite asset: ${asset.symbol}`);
+      }
+    },
+    [favoriteAssets, selectedAsset, watchlistRecordIdBySymbol],
+  );
 
   // Fetch Yahoo Finance RSS news
   useEffect(() => {
@@ -817,9 +879,11 @@ export default function App() {
                   assets={assets}
                   onSelect={handleSelectAsset}
                   selectedId={selectedAsset?.id || ""}
-                  currentPage={watchlistPage}
-                  totalPages={watchlistTotalPages}
-                  onPageChange={(page) => loadWatchlistPage(page)}
+                  searchQuery={watchlistSearchQuery}
+                  onSearchQueryChange={setWatchlistSearchQuery}
+                  searchResults={searchResults}
+                  onAddFavorite={handleAddFavorite}
+                  onRemoveFavorite={handleRemoveFavorite}
                 />
               </div>
               <div className="flex-1 p-8 flex flex-col gap-6">
