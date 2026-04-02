@@ -43,8 +43,8 @@ export const AIChat: React.FC = () => {
 
   const MODELS = [
     { id: "llama3.2", label: "LLAMA_3_2" },
-    { id: "gpt-oss:120b-cloud", label: "GPT_OSS" },
-    { id: "kimi-k2.5:cloud", label: "KIMI_K2_5" },
+    { id: "gpt-oss:120b-cloud", label: "GPT_OSS:CLOUD" },
+    { id: "kimi-k2.5:cloud", label: "KIMI_K2_5:CLOUD" },
   ];
 
   const scrollToBottom = () => {
