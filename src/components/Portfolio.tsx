@@ -1,23 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Sector } from 'recharts';
-import { useState } from 'react';
-import { Holding } from '../types';
+import { Holding, Asset } from '../types';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
 import { ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { AssetDetailModal } from './AssetDetailModal';
 
 interface PortfolioProps {
   holdings: Holding[];
   onManageClick?: () => void;
+  theme?: 'light' | 'dark';
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick }) => {
+export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, theme = 'dark' }) => {
   const { t } = useTranslation();
   const totalValue = holdings.reduce((acc, h) => acc + h.totalValue, 0);
   const totalProfit = holdings.reduce((acc, h) => acc + h.profit, 0);
   const totalProfitPercent = (totalValue - totalProfit) !== 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
+
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleAssetClick = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setIsModalOpen(true);
+  };
 
   const [activeIndex, setActiveIndex] = useState(-1);
 
@@ -190,10 +199,13 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
             </thead>
             <tbody className="divide-y divide-[var(--border)]/10">
               {holdings.map((h) => (
-                <tr key={h.id} className="hover:bg-[var(--foreground)]/5 transition-colors">
+                <tr key={h.id} className="group hover:bg-[var(--foreground)]/5 transition-colors cursor-default">
                   <td className="p-3">
-                    <div className="flex flex-col">
-                      <span className="font-bold">{h.symbol}</span>
+                    <div 
+                      className="flex flex-col cursor-pointer group-hover:text-blue-400 transition-colors"
+                      onClick={() => handleAssetClick(h)}
+                    >
+                      <span className="font-bold border-b border-transparent group-hover:border-blue-400/30 w-fit">{h.symbol}</span>
                       <span className="opacity-40 text-[10px]">{h.name}</span>
                     </div>
                   </td>
@@ -211,6 +223,13 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
           </table>
         </div>
       </div>
+      
+      <AssetDetailModal 
+        asset={selectedAsset}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        theme={theme}
+      />
     </div>
   );
 };
