@@ -42,6 +42,16 @@ export interface BackendHolding {
     avgCost: number;
 }
 
+export interface BackendWatchlistRecord {
+    id: number;
+    userId: number;
+    assetId: number;
+    symbol?: string;
+    fullName?: string;
+    assetType?: 'STOCK' | 'CRYPTO';
+    currentPrice?: number;
+}
+
 /**
  * Fetch assets from the backend database with pagination
  */
@@ -94,6 +104,11 @@ export async function getBackendAssets(): Promise<Asset[]> {
         change: 0, // Placeholder as backend doesn't seem to have change data
         changePercent: 0, // Placeholder
     }));
+}
+
+export async function getBackendAssetMap(): Promise<Map<string, Asset>> {
+    const assets = await getBackendAssets();
+    return new Map(assets.map(asset => [asset.id, asset]));
 }
 
 /**
@@ -200,4 +215,47 @@ export async function getUser(userId: number): Promise<User> {
         email: result.data.email || 'N/A',
         accountPlan: result.data.accountPlan || 'Premium Plan'
     };
+}
+
+/**
+ * Remove a watchlist record by record id.
+ * Swagger: DELETE /api/watchlist/{id}
+ */
+export async function getWatchlistByUser(userId: number): Promise<BackendWatchlistRecord[]> {
+    const response = await fetch(`${BASE_URL}/watchlist/user/${userId}`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch watchlist for user ${userId}: ${response.statusText}`);
+    }
+
+    const result: ApiResult<BackendWatchlistRecord[]> = await response.json();
+    return result.data ?? [];
+}
+
+export async function addFavoriteAsset(userId: number, assetId: number): Promise<boolean> {
+    const response = await fetch(
+        `${BASE_URL}/watchlist?userId=${userId}&assetId=${assetId}`,
+        {
+            method: 'POST'
+        }
+    );
+
+    if (!response.ok) {
+        return false;
+    }
+
+    const result: ApiResult<any> = await response.json();
+    return result.code === 200;
+}
+
+export async function removeFavoriteAsset(recordId: number): Promise<boolean> {
+    const response = await fetch(`${BASE_URL}/watchlist/${recordId}`, {
+        method: 'DELETE'
+    });
+
+    if (!response.ok) {
+        return false;
+    }
+
+    const result: ApiResult<any> = await response.json();
+    return result.code === 200;
 }
