@@ -62,10 +62,14 @@
     "aiGreeting": "Hello! I am your WealthWise assistant. How can I help you today?",
     "aiError": "I am sorry, I could not process that.",
     "aiThinking": "Thinking...",
-    "askAIPlaceholder": "Ask about your portfolio...",
+    "askAIPlaceholder": "Discuss your strategy, analyze assets, or get market insights...",
     "fetchingLiveData": "Fetching live data from Portfolio Manager API...",
     "initializingMarketData": "Initializing market data...",
     "loadingAssetDetails": "Loading asset details...",
     "aiAdvisorDescription": "Discuss your strategy, analyze assets, or get market insights.",
-    "marketAnomalies": "Market Movements"
+    "marketAnomalies": "Market Movements",
+    "aiPrivacyTitle": "Privacy Warning",
+    "aiPrivacyWarning": "Ollama runs on your local server. The other two models run on the cloud. By using the AI chat functionality, your data will be sent to the corresponding LLM (local server or cloud LLM). Cloud LLMs provide a better experience. Users assume responsibility for their own data and risks. Only users who agree can use the chat.",
+    "agree": "Agree",
+    "disagree": "Disagree"
 }
