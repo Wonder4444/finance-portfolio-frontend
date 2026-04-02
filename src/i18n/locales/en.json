@@ -62,7 +62,7 @@
     "aiGreeting": "Hello! I am your WealthWise assistant. How can I help you today?",
     "aiError": "I am sorry, I could not process that.",
     "aiThinking": "Thinking...",
-    "askAIPlaceholder": "Ask about your portfolio...",
+    "askAIPlaceholder": "Discuss your strategy, analyze assets, or get market insights...",
     "fetchingLiveData": "Fetching live data from Portfolio Manager API...",
     "initializingMarketData": "Initializing market data...",
     "loadingAssetDetails": "Loading asset details...",

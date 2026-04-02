@@ -105,27 +105,20 @@ export const AIChat: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden glass-panel border-none">
-      <div className="p-4 border-b border-[var(--border)] flex items-center gap-2">
-        <Bot size={20} className="text-blue-400" />
-        <h2 className="font-medium uppercase tracking-wider text-xs opacity-60">
-          {t("aiAdvisor")}
-        </h2>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         {messages.map((msg, i) => (
           <div
             key={i}
             className={cn(
-              "flex gap-3 max-w-[85%]",
+              "flex gap-3 max-w-[95%] md:max-w-[85%]",
               msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto",
             )}
           >
             <div
               className={cn(
-                "w-8 h-8 flex items-center justify-center shrink-0",
+                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1",
                 msg.role === "user"
-                  ? "bg-[var(--foreground)]/10"
+                  ? "bg-blue-500/20 text-blue-500"
                   : "bg-blue-500/20",
               )}
             >
@@ -137,10 +130,10 @@ export const AIChat: React.FC = () => {
             </div>
             <div
               className={cn(
-                "p-3 text-sm leading-relaxed",
+                "p-4 text-sm leading-relaxed",
                 msg.role === "user"
-                  ? "bg-[var(--foreground)]/5"
-                  : "bg-[var(--foreground)]/5 border border-[var(--border)]/5",
+                  ? "bg-blue-500/10 text-[var(--foreground)] rounded-2xl rounded-tr-sm"
+                  : "bg-[var(--foreground)]/5 border border-[var(--border)]/10 rounded-2xl rounded-tl-sm shadow-sm",
               )}
             >
               <div className="prose dark:prose-invert prose-sm max-w-none w-full overflow-hidden">
@@ -360,11 +353,11 @@ export const AIChat: React.FC = () => {
           </div>
         ))}
         {isLoading && (
-          <div className="flex gap-3 mr-auto">
-            <div className="w-8 h-8 flex items-center justify-center shrink-0 bg-blue-500/20">
+          <div className="flex gap-3 mr-auto max-w-[95%] md:max-w-[85%]">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500/20 mt-1">
               <Loader2 size={16} className="text-blue-400 animate-spin" />
             </div>
-            <div className="p-3 text-sm bg-[var(--foreground)]/5 animate-pulse">
+            <div className="p-4 text-sm leading-relaxed bg-[var(--foreground)]/5 border border-[var(--border)]/10 rounded-2xl rounded-tl-sm shadow-sm animate-pulse">
               {t("aiThinking")}
             </div>
           </div>
@@ -373,21 +366,24 @@ export const AIChat: React.FC = () => {
       </div>
 
       <div className="p-4 border-t border-[var(--border)]">
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder={t("askAIPlaceholder")}
-            className="flex-1 bg-[var(--foreground)]/5 border border-[var(--border)] p-2 text-sm focus:outline-none focus:border-blue-500/50"
+            className="flex-1 bg-[var(--foreground)]/5 border border-[var(--border)] p-3 px-5 rounded-full text-sm focus:outline-none focus:border-blue-500/50 focus:bg-[var(--foreground)]/10 transition-colors"
           />
           <button
             onClick={handleSend}
-            disabled={isLoading}
-            className="glass-button p-2 px-4 flex items-center justify-center disabled:opacity-50"
+            disabled={isLoading || !input.trim()}
+            className="glass-button !p-3 !px-5 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-blue-500/10 transition-colors"
           >
-            <Send size={18} />
+            <Send
+              size={18}
+              className={input.trim() ? "text-blue-500" : "opacity-50"}
+            />
           </button>
         </div>
       </div>
