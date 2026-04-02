@@ -68,8 +68,14 @@
     "loadingAssetDetails": "Loading asset details...",
     "aiAdvisorDescription": "Discuss your strategy, analyze assets, or get market insights.",
     "marketAnomalies": "Market Movements",
-    "aiPrivacyTitle": "Privacy Warning",
-    "aiPrivacyWarning": "Ollama runs on your local server. The other two models run on the cloud. By using the AI chat functionality, your data will be sent to the corresponding LLM (local server or cloud LLM). Cloud LLMs provide a better experience. Users assume responsibility for their own data and risks. Only users who agree can use the chat.",
-    "agree": "Agree",
-    "disagree": "Disagree"
+    "aiPrivacyTitle": "AI Service Notice",
+    "aiPrivacyWarning": "To provide accurate financial analysis, this system integrates multiple AI models. You can choose based on your needs:\n\n1. Local Model (Llama): Data is processed entirely on the local server for maximum privacy, with moderate analytical depth.\n2. Cloud Models (GPT/Kimi): Data is encrypted and sent to the cloud for superior reasoning and comprehensive analysis.\n\nPlease note: All AI-generated information is for reference only and does not constitute investment advice. By continuing, you acknowledge and agree to the respective data processing methods.",
+    "agree": "I understand and agree",
+    "disagree": "Disagree",
+    "modelLocalLabel": "Private (Local)",
+    "modelLocalInfo": "Data stays local, maximum privacy",
+    "modelCloudGPTLabel": "Enhanced (Cloud)",
+    "modelCloudGPTInfo": "Superior reasoning and deep analysis",
+    "modelCloudKimiLabel": "Context (Cloud)",
+    "modelCloudKimiInfo": "Expert in long context processing"
 }

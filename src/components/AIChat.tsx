@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, ShieldCheck, Cloud, Zap, ChevronDown, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -42,9 +42,30 @@ export const AIChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const MODELS = [
-    { id: "llama3.2", label: "LLAMA_3_2" },
-    { id: "gpt-oss:120b-cloud", label: "GPT_OSS:CLOUD" },
-    { id: "kimi-k2.5:cloud", label: "KIMI_K2_5:CLOUD" },
+    { 
+      id: "llama3.2", 
+      labelKey: "modelLocalLabel", 
+      fullName: "Llama 3.2",
+      isCloud: false,
+      infoKey: "modelLocalInfo",
+      icon: ShieldCheck
+    },
+    { 
+      id: "gpt-oss:120b-cloud", 
+      labelKey: "modelCloudGPTLabel", 
+      fullName: "GPT-OSS 120B",
+      isCloud: true,
+      infoKey: "modelCloudGPTInfo",
+      icon: Zap
+    },
+    { 
+      id: "kimi-k2.5:cloud", 
+      labelKey: "modelCloudKimiLabel", 
+      fullName: "Kimi v2.5",
+      isCloud: true,
+      infoKey: "modelCloudKimiInfo",
+      icon: Cloud
+    },
   ];
 
   const scrollToBottom = () => {
@@ -115,13 +136,13 @@ export const AIChat: React.FC = () => {
   return (
     <div className="absolute inset-0 flex flex-col overflow-hidden glass-panel border-none">
       {!hasAgreed && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[var(--background)]/80 backdrop-blur-sm p-4">
-          <div className="glass-panel p-6 max-w-md w-full border border-[var(--border)]/50 shadow-2xl flex flex-col gap-4 max-h-[90%] overflow-y-auto">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-(--background)/80 backdrop-blur-sm p-4">
+          <div className="glass-panel p-6 max-w-md w-full border border-(--border)/50 shadow-2xl flex flex-col gap-4 max-h-[90%] overflow-y-auto">
             <h3 className="text-lg font-semibold flex items-center gap-2 shrink-0">
               <span className="text-yellow-500 text-xl">⚠️</span>{" "}
               {t("aiPrivacyTitle")}
             </h3>
-            <p className="text-sm text-[var(--foreground)]/80 leading-relaxed overflow-y-auto">
+            <p className="text-sm text-(--foreground)/80 leading-relaxed overflow-y-auto whitespace-pre-wrap">
               {t("aiPrivacyWarning")}
             </p>
             <div className="flex justify-end gap-3 mt-4 shrink-0">
@@ -163,8 +184,8 @@ export const AIChat: React.FC = () => {
               className={cn(
                 "p-4 text-sm leading-relaxed",
                 msg.role === "user"
-                  ? "bg-blue-500/10 text-[var(--foreground)] rounded-2xl rounded-tr-sm"
-                  : "bg-[var(--foreground)]/5 border border-[var(--border)]/10 rounded-2xl rounded-tl-sm shadow-sm",
+                  ? "bg-blue-500/10 text-(--foreground) rounded-2xl rounded-tr-sm"
+                  : "bg-(--foreground)/5 border border-(--border)/10 rounded-2xl rounded-tl-sm shadow-sm",
               )}
             >
               <div className="prose dark:prose-invert prose-sm max-w-none w-full overflow-hidden">
@@ -186,7 +207,7 @@ export const AIChat: React.FC = () => {
                     thead({ children, ...props }: any) {
                       return (
                         <thead
-                          className="bg-[var(--foreground)]/5 border-b border-[var(--border)]/10"
+                          className="bg-(--foreground)/5 border-b border-(--border)/10"
                           {...props}
                         >
                           {children}
@@ -206,7 +227,7 @@ export const AIChat: React.FC = () => {
                     td({ children, ...props }: any) {
                       return (
                         <td
-                          className="px-4 py-3 border-t border-[var(--border)]/5"
+                          className="px-4 py-3 border-t border-(--border)/5"
                           {...props}
                         >
                           {children}
@@ -304,7 +325,7 @@ export const AIChat: React.FC = () => {
                           }
 
                           return (
-                            <div className="h-[300px] w-full my-4 bg-[var(--background)] p-4 rounded border border-[var(--border)] overflow-hidden">
+                            <div className="h-75 w-full my-4 bg-(--background) p-4 rounded border border-(--border) overflow-hidden">
                               {config.title && (
                                 <div className="text-xs font-semibold mb-2 opacity-70 text-center">
                                   {config.title}
@@ -526,7 +547,7 @@ export const AIChat: React.FC = () => {
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500/20 mt-1">
               <Loader2 size={16} className="text-blue-400 animate-spin" />
             </div>
-            <div className="p-4 text-sm leading-relaxed bg-[var(--foreground)]/5 border border-[var(--border)]/10 rounded-2xl rounded-tl-sm shadow-sm animate-pulse">
+            <div className="p-4 text-sm leading-relaxed bg-(--foreground)/5 border border-(--border)/10 rounded-2xl rounded-tl-sm shadow-sm animate-pulse">
               {t("aiThinking")}
             </div>
           </div>
@@ -534,20 +555,46 @@ export const AIChat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-[var(--border)]">
-        <div className="flex gap-2 mb-3">
+      <div className="p-4 border-t border-(--border) bg-(--background)/50 backdrop-blur-md">
+        <div className="flex flex-wrap gap-2 mb-4">
           {MODELS.map((m) => (
             <button
               key={m.id}
               onClick={() => setSelectedModel(m.id)}
+              title={t(m.infoKey)}
               className={cn(
-                "px-3 py-1.5 text-xs rounded-full border transition-colors",
+                "group relative flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300",
                 selectedModel === m.id
-                  ? "bg-blue-500/20 text-blue-500 border-blue-500/50"
-                  : "bg-[var(--foreground)]/5 text-[var(--foreground)]/70 hover:text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--foreground)]/10",
+                  ? "bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/20"
+                  : "bg-(--foreground)/5 border-(--border) hover:border-blue-500/30 hover:bg-(--foreground)/10"
               )}
             >
-              {m.label}
+              <div className={cn(
+                "w-6 h-6 rounded-lg flex items-center justify-center transition-colors",
+                selectedModel === m.id ? "bg-blue-500 text-white" : "bg-(--foreground)/10 text-(--foreground)/60 group-hover:text-blue-500"
+              )}>
+                <m.icon size={14} />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className={cn(
+                  "text-[10px] font-medium leading-none mb-0.5",
+                  selectedModel === m.id ? "text-blue-500" : "text-(--foreground)/40"
+                )}>
+                  {m.isCloud ? "Cloud AI" : "Local AI"}
+                </span>
+                <span className={cn(
+                  "text-xs font-semibold leading-none",
+                  selectedModel === m.id ? "text-(--foreground)" : "text-(--foreground)/70"
+                )}>
+                  {t(m.labelKey)}
+                </span>
+              </div>
+              
+              {selectedModel === m.id && (
+                <div className="absolute -top-1 -right-1">
+                  <Sparkles size={8} className="text-blue-500 animate-pulse" />
+                </div>
+              )}
             </button>
           ))}
         </div>
@@ -558,16 +605,20 @@ export const AIChat: React.FC = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder={t("askAIPlaceholder")}
-            className="flex-1 bg-[var(--foreground)]/5 border border-[var(--border)] p-3 px-5 rounded-full text-sm focus:outline-none focus:border-blue-500/50 focus:bg-[var(--foreground)]/10 transition-colors"
+            className="flex-1 bg-(--foreground)/5 border border-(--border) p-3 px-6 rounded-2xl text-sm focus:outline-none focus:border-blue-500/50 focus:bg-(--foreground)/10 transition-all placeholder:opacity-50"
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="glass-button !p-3 !px-5 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-blue-500/10 transition-colors"
+            className="group relative p-3! px-6! rounded-2xl flex items-center justify-center disabled:opacity-50 transition-all overflow-hidden"
           >
+            <div className="absolute inset-0 bg-blue-500 opacity-10 group-hover:opacity-20 transition-opacity" />
             <Send
               size={18}
-              className={input.trim() ? "text-blue-500" : "opacity-50"}
+              className={cn(
+                "transition-all",
+                input.trim() ? "text-blue-500 scale-110" : "opacity-30"
+              )}
             />
           </button>
         </div>
