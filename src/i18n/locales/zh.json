@@ -68,8 +68,14 @@
     "loadingAssetDetails": "正在加载资产详情...",
     "aiAdvisorDescription": "讨论您的投资策略、分析资产或获取市场洞察。",
     "marketAnomalies": "市场异动",
-    "aiPrivacyTitle": "隐私警告",
-    "aiPrivacyWarning": "Ollama 在本地服务器运行，而另外两个模型在云端运行。使用 AI 聊天功能意味着您的数据将发送给相应的 LLM（本地服务器或云端 LLM）。云端 LLM 会提供更好的体验。用户须自行承担风险并对自己负责。只有同意此条款的用户才能使用聊天功能。",
-    "agree": "同意",
-    "disagree": "不同意"
+    "aiPrivacyTitle": "AI 服务使用须知",
+    "aiPrivacyWarning": "为了为您提供精准的金融分析，本系统集成了多种 AI 模型。您可以根据需求选择：\n\n1. 本地模型 (Llama)：数据在本地服务器中处理，隐私性极高，但分析能力相对基础。\n2. 云端模型 (GPT/Kimi)：数据将加密传输至云端，提供更强大的逻辑推理与多维度的深度分析。\n\n请注意，AI 生成的所有信息仅供参考，不构成任何投资建议。继续使用即表示您知晓并同意相关数据处理方式。",
+    "agree": "我已知晓并同意",
+    "disagree": "不同意",
+    "modelLocalLabel": "私密 (本地)",
+    "modelLocalInfo": "数据不出本地，保护隐私",
+    "modelCloudGPTLabel": "全能 (云端)",
+    "modelCloudGPTInfo": "顶级推理能力，深度分析",
+    "modelCloudKimiLabel": "长文本 (云端)",
+    "modelCloudKimiInfo": "擅长长文分析与中文处理"
 }
