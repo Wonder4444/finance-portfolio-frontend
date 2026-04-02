@@ -1,5 +1,6 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Sector } from 'recharts';
+import { useState } from 'react';
 import { Holding } from '../types';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
 import { ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
@@ -18,10 +19,24 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
   const totalProfit = holdings.reduce((acc, h) => acc + h.profit, 0);
   const totalProfitPercent = (totalValue - totalProfit) !== 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
 
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const onPieEnter = (_: any, index: number) => {
+    setActiveIndex(index);
+  };
+
+  const onPieLeave = () => {
+    setActiveIndex(-1);
+  };
+
   const chartData = holdings.map(h => ({
     name: h.symbol,
-    value: h.totalValue
+    value: h.totalValue,
+    fullName: h.name,
+    percentage: totalValue > 0 ? (h.totalValue / totalValue) * 100 : 0
   }));
+
+  const activeData = activeIndex >= 0 ? chartData[activeIndex] : null;
 
   return (
     <div className="space-y-6">
@@ -69,11 +84,30 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
               </button>
             )}
           </div>
-          <div className="h-[260px] relative">
+          <div className="h-[280px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
+                  activeIndex={activeIndex}
+                  activeShape={(props: any) => {
+                    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+                    return (
+                        <g>
+                            <Sector
+                                cx={cx}
+                                cy={cy}
+                                innerRadius={innerRadius}
+                                outerRadius={outerRadius + 6}
+                                startAngle={startAngle}
+                                endAngle={endAngle}
+                                fill={fill}
+                            />
+                        </g>
+                    );
+                  }}
                   data={chartData}
+                  onMouseEnter={onPieEnter}
+                  onMouseLeave={onPieLeave}
                   cx="50%"
                   cy="50%"
                   innerRadius={65}
@@ -94,7 +128,7 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
                         fill="var(--foreground)"
                         textAnchor={x > cx ? 'start' : 'end'}
                         dominantBaseline="central"
-                        className="text-[10px] font-mono font-bold opacity-60"
+                        className="text-[10px] font-mono font-bold opacity-60 pointer-events-none"
                       >
                         {name}
                       </text>
@@ -103,20 +137,9 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
                   labelLine={{ stroke: 'var(--border)', strokeWidth: 1, opacity: 0.2 }}
                 >
                   {chartData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="focus:outline-none cursor-pointer" />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                    fontSize: '10px',
-                    color: '#fff'
-                  }}
-                  itemStyle={{ color: '#fff', padding: '2px 0' }}
-                />
                 <Legend 
                   verticalAlign="bottom" 
                   height={30} 
@@ -130,9 +153,28 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
             {/* Center Content */}
             <div className="absolute top-[41%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                 <p className="text-[9px] uppercase opacity-40 font-mono tracking-widest mb-0.5">{t('totalValue', 'Total Value')}</p>
-                <p className="text-lg font-bold tracking-tighter leading-none">{formatCurrency(totalValue)}</p>
+                <p className="text-xl font-light tracking-tighter leading-none">{formatCurrency(totalValue)}</p>
                 <p className="text-[8px] opacity-30 font-mono mt-1">{holdings.length} Assets</p>
             </div>
+
+            {/* Float Tooltip (Fixed Position to avoid overlap) */}
+            {activeData && (
+                <div className="absolute top-0 right-0 bg-slate-900/95 border border-white/20 p-3 shadow-2xl z-[100] min-w-[160px] animate-in slide-in-from-right-2 fade-in duration-200 backdrop-blur-md rounded-xl pointer-events-none">
+                    <div className="flex items-center justify-between mb-1">
+                        <p className="font-bold text-sm leading-none text-white tracking-tight">{activeData.name}</p>
+                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded font-mono font-bold leading-none">
+                            {activeData.percentage.toFixed(1)}%
+                        </span>
+                    </div>
+                    <p className="text-[10px] text-white/50 mb-2 truncate font-medium">{activeData.fullName}</p>
+                    <div className="pt-2 border-t border-white/10">
+                        <div className="flex justify-between items-center text-[10px] gap-2">
+                            <span className="text-white/40 uppercase font-mono tracking-widest whitespace-nowrap">Balance</span>
+                            <span className="text-white font-mono font-bold ml-auto">{formatCurrency(activeData.value)}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
           </div>
         </div>
 
