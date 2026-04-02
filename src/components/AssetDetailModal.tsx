@@ -91,6 +91,7 @@ const TradingViewWidget = ({ type, symbol, theme, height = '100%' }: { type: str
 
 export const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ asset, isOpen, onClose, theme = 'dark' }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'charts' | 'financials'>('overview');
+  const [exchangeOverride, setExchangeOverride] = useState<'AUTO' | 'NASDAQ' | 'NYSE'>('AUTO');
   
   if (!isOpen || !asset) return null;
 
@@ -109,9 +110,27 @@ export const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ asset, isOpe
   } else if (asset.type === 'stock' || !asset.type) {
     if (!tvSymbol.includes(':')) {
       const nasdaqStocks = ['AAPL', 'MSFT', 'NVDA', 'GOOG', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'INTC', 'PYPL', 'ADBE', 'CSCO', 'PEP'];
-      tvSymbol = nasdaqStocks.includes(tvSymbol.toUpperCase()) ? `NASDAQ:${tvSymbol}` : `NYSE:${tvSymbol}`;
+      const symbolUpper = tvSymbol.toUpperCase();
+      
+      let targetExchange = '';
+      if (exchangeOverride !== 'AUTO') {
+        targetExchange = exchangeOverride;
+      } else {
+        // Heuristic: NASDAQ symbols are typically 4+ characters, NYSE are 1-3 characters
+        targetExchange = (nasdaqStocks.includes(symbolUpper) || symbolUpper.length >= 4) ? 'NASDAQ' : 'NYSE';
+      }
+      
+      tvSymbol = `${targetExchange}:${symbolUpper}`;
     }
   }
+
+  const toggleExchange = () => {
+     setExchangeOverride(prev => {
+        if (prev === 'AUTO') return 'NASDAQ';
+        if (prev === 'NASDAQ') return 'NYSE';
+        return 'AUTO';
+     });
+  };
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
@@ -126,9 +145,22 @@ export const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ asset, isOpe
                 {asset.symbol.substring(0, 1)}
              </div>
              <div>
-                <h2 className="text-2xl font-bold tracking-tighter">
-                    {asset.symbol} 
-                </h2>
+                <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold tracking-tighter">
+                        {asset.symbol} 
+                    </h2>
+                    {asset.type === 'stock' && (
+                        <button 
+                            onClick={toggleExchange}
+                            className="px-2 py-0.5 bg-[var(--foreground)]/5 hover:bg-blue-500/10 border border-[var(--border)] hover:border-blue-500/30 rounded text-[9px] font-mono font-bold transition-all flex items-center gap-1.5"
+                            title="Toggle Exchange Fallback"
+                        >
+                            <span className="opacity-40 uppercase tracking-widest">Routing:</span>
+                            <span className="text-blue-500 uppercase">{tvSymbol.split(':')[0]}</span>
+                            <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse"></div>
+                        </button>
+                    )}
+                </div>
                 <p className="text-sm opacity-40 font-mono mt-1">{asset.name} • {asset.industry}</p>
              </div>
           </div>
