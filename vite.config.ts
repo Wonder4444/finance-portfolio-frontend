@@ -23,6 +23,12 @@ export default defineConfig(({ mode }) => {
           target: "http://localhost:8080",
           changeOrigin: true,
         },
+        // Proxy local crypto price API requests
+        "/crypto-api": {
+          target: "http://localhost:8787",
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/crypto-api/, ""),
+        },
         // Proxy Yahoo Finance API requests to bypass CORS
         "/yahoo-finance": {
           target: "https://query1.finance.yahoo.com",
