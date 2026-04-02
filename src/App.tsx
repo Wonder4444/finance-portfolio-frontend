@@ -690,6 +690,7 @@ export default function App() {
                 <Portfolio
                   holdings={holdings}
                   onManageClick={() => setActiveTab("holdings_edit")}
+                  theme={theme}
                 />
               </section>
 
