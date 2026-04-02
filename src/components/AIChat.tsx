@@ -1,6 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 import { ChatMessage } from "../types";
 import { cn } from "../lib/utils";
@@ -8,6 +24,8 @@ import { useTranslation } from "react-i18next";
 
 export const AIChat: React.FC = () => {
   const { t, i18n } = useTranslation();
+
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -125,8 +143,218 @@ export const AIChat: React.FC = () => {
                   : "bg-[var(--foreground)]/5 border border-[var(--border)]/5",
               )}
             >
-              <div className="prose dark:prose-invert prose-sm max-w-none">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              <div className="prose dark:prose-invert prose-sm max-w-none w-full overflow-hidden">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    table({ children, ...props }: any) {
+                      return (
+                        <div className="overflow-x-auto my-4 w-full glass-panel">
+                          <table
+                            className="min-w-full text-left text-sm"
+                            {...props}
+                          >
+                            {children}
+                          </table>
+                        </div>
+                      );
+                    },
+                    thead({ children, ...props }: any) {
+                      return (
+                        <thead
+                          className="bg-[var(--foreground)]/5 border-b border-[var(--border)]/10"
+                          {...props}
+                        >
+                          {children}
+                        </thead>
+                      );
+                    },
+                    th({ children, ...props }: any) {
+                      return (
+                        <th
+                          className="px-4 py-3 font-mono uppercase opacity-50 text-xs"
+                          {...props}
+                        >
+                          {children}
+                        </th>
+                      );
+                    },
+                    td({ children, ...props }: any) {
+                      return (
+                        <td
+                          className="px-4 py-3 border-t border-[var(--border)]/5"
+                          {...props}
+                        >
+                          {children}
+                        </td>
+                      );
+                    },
+                    code({ className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      const language = match ? match[1].toLowerCase() : "";
+                      const isChartLang =
+                        language === "chart" || language === "recharts";
+                      const isJsonLang = language === "json";
+
+                      let isChart = isChartLang;
+                      let config: any = null;
+
+                      if (isChartLang || isJsonLang) {
+                        try {
+                          const parsed = JSON.parse(
+                            String(children).replace(/\n$/, ""),
+                          );
+                          if (isChartLang) {
+                            config = parsed;
+                            isChart = true;
+                          } else if (
+                            isJsonLang &&
+                            parsed &&
+                            typeof parsed === "object" &&
+                            typeof parsed.type === "string" &&
+                            Array.isArray(parsed.data)
+                          ) {
+                            if (
+                              ["bar", "line", "pie", "area"].includes(
+                                parsed.type.toLowerCase(),
+                              )
+                            ) {
+                              config = parsed;
+                              isChart = true;
+                            }
+                          }
+                        } catch (e) {
+                          // Ignore parse errors, fallback will trigger later
+                        }
+                      }
+
+                      if (isChart && config) {
+                        try {
+                          const type = (config.type || "line").toLowerCase();
+                          const data = config.data || [];
+                          const xKey = config.xKey || "name";
+                          const yKeys =
+                            config.yKeys ||
+                            (config.yKey ? [config.yKey] : ["value"]);
+
+                          return (
+                            <div className="h-[250px] w-full my-4 bg-[var(--background)] p-4 rounded border border-[var(--border)] overflow-hidden">
+                              <ResponsiveContainer width="100%" height="100%">
+                                {type === "bar" ? (
+                                  <BarChart data={data}>
+                                    <CartesianGrid
+                                      strokeDasharray="3 3"
+                                      opacity={0.2}
+                                    />
+                                    <XAxis
+                                      dataKey={xKey}
+                                      tick={{ fontSize: 12 }}
+                                    />
+                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <RechartsTooltip
+                                      contentStyle={{
+                                        backgroundColor: "var(--background)",
+                                        borderColor: "var(--border)",
+                                        color: "var(--foreground)",
+                                      }}
+                                    />
+                                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                                    {yKeys.map((key: string, idx: number) => (
+                                      <Bar
+                                        key={key}
+                                        dataKey={key}
+                                        fill={COLORS[idx % COLORS.length]}
+                                      />
+                                    ))}
+                                  </BarChart>
+                                ) : type === "pie" ? (
+                                  <PieChart>
+                                    <Pie
+                                      data={data}
+                                      dataKey={yKeys[0]}
+                                      nameKey={xKey}
+                                      cx="50%"
+                                      cy="50%"
+                                      outerRadius={80}
+                                      label={{ fontSize: 12 }}
+                                    >
+                                      {data.map((_: any, idx: number) => (
+                                        <Cell
+                                          key={`cell-${idx}`}
+                                          fill={COLORS[idx % COLORS.length]}
+                                        />
+                                      ))}
+                                    </Pie>
+                                    <RechartsTooltip
+                                      contentStyle={{
+                                        backgroundColor: "var(--background)",
+                                        borderColor: "var(--border)",
+                                        color: "var(--foreground)",
+                                      }}
+                                    />
+                                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                                  </PieChart>
+                                ) : (
+                                  <LineChart data={data}>
+                                    <CartesianGrid
+                                      strokeDasharray="3 3"
+                                      opacity={0.2}
+                                    />
+                                    <XAxis
+                                      dataKey={xKey}
+                                      tick={{ fontSize: 12 }}
+                                    />
+                                    <YAxis tick={{ fontSize: 12 }} />
+                                    <RechartsTooltip
+                                      contentStyle={{
+                                        backgroundColor: "var(--background)",
+                                        borderColor: "var(--border)",
+                                        color: "var(--foreground)",
+                                      }}
+                                    />
+                                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                                    {yKeys.map((key: string, idx: number) => (
+                                      <Line
+                                        key={key}
+                                        type="monotone"
+                                        dataKey={key}
+                                        stroke={COLORS[idx % COLORS.length]}
+                                        activeDot={{ r: 8 }}
+                                      />
+                                    ))}
+                                  </LineChart>
+                                )}
+                              </ResponsiveContainer>
+                            </div>
+                          );
+                        } catch (e) {
+                          return (
+                            <div className="bg-red-500/10 border border-red-500 p-2 text-red-500 rounded my-2 text-xs">
+                              Failed to render chart: Invalid JSON configuration
+                            </div>
+                          );
+                        }
+                      }
+                      return (
+                        <code
+                          className={className}
+                          style={{
+                            backgroundColor: "var(--foreground)",
+                            color: "var(--background)",
+                            padding: "0.2rem 0.4rem",
+                            borderRadius: "0.2rem",
+                            fontSize: "0.875rem",
+                          }}
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
               </div>
             </div>
           </div>
