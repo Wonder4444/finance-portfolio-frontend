@@ -7,6 +7,11 @@ export interface Asset {
   change: number;
   changePercent: number;
   isLive?: boolean;
+  marketCap?: number;
+  peRatio?: number;
+  psRatio?: number;
+  pbRatio?: number;
+  industry?: string;
 }
 
 export interface Holding extends Asset {

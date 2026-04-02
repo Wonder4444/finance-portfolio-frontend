@@ -30,6 +30,12 @@ export interface BackendAsset {
     fullName: string;
     assetType: 'STOCK' | 'CRYPTO';
     currentPrice: number;
+    marketCap?: number;
+    changePercent?: number;
+    peRatio?: number;
+    psRatio?: number;
+    pbRatio?: number;
+    industry?: string;
     createTime: string;
     updateTime: string;
 }
@@ -79,7 +85,12 @@ export async function getBackendAssetsPaginated(current: number, size: number): 
             type: asset.assetType.toLowerCase() as 'stock' | 'crypto',
             price: asset.currentPrice,
             change: 0,
-            changePercent: 0,
+            changePercent: asset.changePercent ?? 0,
+            marketCap: asset.marketCap,
+            peRatio: asset.peRatio,
+            psRatio: asset.psRatio,
+            pbRatio: asset.pbRatio,
+            industry: asset.industry,
         }))
     };
 }
@@ -102,7 +113,12 @@ export async function getBackendAssets(): Promise<Asset[]> {
         type: asset.assetType.toLowerCase() as 'stock' | 'crypto',
         price: asset.currentPrice,
         change: 0, // Placeholder as backend doesn't seem to have change data
-        changePercent: 0, // Placeholder
+        changePercent: asset.changePercent ?? 0, // Heatmap will use this
+        marketCap: asset.marketCap,
+        peRatio: asset.peRatio,
+        psRatio: asset.psRatio,
+        pbRatio: asset.pbRatio,
+        industry: asset.industry,
     }));
 }
 

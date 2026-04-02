@@ -1,5 +1,5 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Holding } from '../types';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
 import { ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
@@ -69,18 +69,38 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
               </button>
             )}
           </div>
-          <div className="h-[200px]">
+          <div className="h-[260px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={chartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
+                  innerRadius={65}
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
                   stroke="none"
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, index, name }) => {
+                    const RADIAN = Math.PI / 180;
+                    const radius = outerRadius + 12;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill="var(--foreground)"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        className="text-[10px] font-mono font-bold opacity-60"
+                      >
+                        {name}
+                      </text>
+                    );
+                  }}
+                  labelLine={{ stroke: 'var(--border)', strokeWidth: 1, opacity: 0.2 }}
                 >
                   {chartData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -88,15 +108,31 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick })
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'var(--background)',
-                    borderColor: 'var(--border)',
-                    fontSize: '12px',
-                    color: 'var(--foreground)'
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '10px',
+                    color: '#fff'
                   }}
-                  itemStyle={{ color: 'var(--foreground)' }}
+                  itemStyle={{ color: '#fff', padding: '2px 0' }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={30} 
+                  iconType="circle" 
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
                 />
               </PieChart>
             </ResponsiveContainer>
+            
+            {/* Center Content */}
+            <div className="absolute top-[41%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                <p className="text-[9px] uppercase opacity-40 font-mono tracking-widest mb-0.5">{t('totalValue', 'Total Value')}</p>
+                <p className="text-lg font-bold tracking-tighter leading-none">{formatCurrency(totalValue)}</p>
+                <p className="text-[8px] opacity-30 font-mono mt-1">{holdings.length} Assets</p>
+            </div>
           </div>
         </div>
 

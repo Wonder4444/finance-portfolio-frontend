@@ -9,6 +9,7 @@ import {
     fetchAllIndices,
     type IndexQuote,
 } from '../services/indicesApi';
+import { MarketHeatmap } from './MarketHeatmap';
 
 
 // ── Area chart component ─────────────────────────────────────────────
@@ -418,23 +419,8 @@ export function MarketSummary({ theme, assets, isLoading = false }: MarketSummar
             </div>
 
             {/* Market Sections Based on Backend Data Types */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                {stockItems.length > 0 && (
-                    <MarketList
-                        title={t('databaseStocks')}
-                        items={stockItems}
-                        footerLabel={t('analysisStocks')}
-                        isLoading={isLoading && stockItems.length === 0}
-                    />
-                )}
-                {cryptoItems.length > 0 && (
-                    <MarketList
-                        title={t('databaseCrypto')}
-                        items={cryptoItems}
-                        footerLabel={t('analysisCrypto')}
-                        isLoading={isLoading && cryptoItems.length === 0}
-                    />
-                )}
+            <div className="w-full">
+                <MarketHeatmap assets={assets} theme={theme} />
             </div>
         </div>
     );
