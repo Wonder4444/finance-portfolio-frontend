@@ -34,6 +34,10 @@ import {
   type TickerSummary,
   type OHLCBar,
 } from "./services/priceApi";
+import {
+  fetchCryptoTickerSummaries,
+  isCryptoSymbol,
+} from "./services/cryptoApi";
 import { fetchYahooNews } from "./services/newsApi";
 
 import {
@@ -278,15 +282,47 @@ export default function App() {
         }
       }
 
-      setTickerSummaries(summaries);
+      const cryptoSymbols = new Set<string>();
+      paginatedAssets.records.forEach((asset) => {
+        if (asset.type === "crypto" || isCryptoSymbol(asset.symbol)) {
+          cryptoSymbols.add(asset.symbol);
+        }
+      });
+      backendHoldings.forEach((holding) => {
+        if (holding.type === "crypto" || isCryptoSymbol(holding.symbol)) {
+          cryptoSymbols.add(holding.symbol);
+        }
+      });
+
+      let mergedSummaries = summaries;
+      if (cryptoSymbols.size > 0) {
+        try {
+          const cryptoSummaries = await fetchCryptoTickerSummaries([
+            ...cryptoSymbols,
+          ]);
+          const summaryMap = new Map(
+            summaries.map((summary) => [summary.ticker, summary]),
+          );
+          cryptoSummaries.forEach((summary) => {
+            summaryMap.set(summary.ticker, summary);
+          });
+          mergedSummaries = [...summaryMap.values()];
+        } catch (error) {
+          console.warn("Failed to fetch crypto quotes:", error);
+        }
+      }
+
+      setTickerSummaries(mergedSummaries);
       setChartDataMap(newChartMap);
       setRawChartDataMap(tickerDataMap);
       setWatchlistPage(paginatedAssets.current);
       setWatchlistTotalPages(paginatedAssets.pages);
-      setHoldings(updateHoldingsWithLivePrices(backendHoldings, summaries));
+      setHoldings(
+        updateHoldingsWithLivePrices(backendHoldings, mergedSummaries),
+      );
       setUser(userData);
 
-      updateAssetsState(paginatedAssets.records, summaries);
+      updateAssetsState(paginatedAssets.records, mergedSummaries);
 
       // Auto-select first asset chart
       if (paginatedAssets.records.length > 0) {
@@ -307,7 +343,32 @@ export default function App() {
         const paginatedAssets = await getBackendAssetsPaginated(page, 20);
         setWatchlistPage(paginatedAssets.current);
         setWatchlistTotalPages(paginatedAssets.pages);
-        updateAssetsState(paginatedAssets.records, tickerSummaries);
+
+        const pageCryptoSymbols = paginatedAssets.records
+          .filter(
+            (asset) => asset.type === "crypto" || isCryptoSymbol(asset.symbol),
+          )
+          .map((asset) => asset.symbol);
+
+        let nextSummaries = tickerSummaries;
+        if (pageCryptoSymbols.length > 0) {
+          try {
+            const cryptoSummaries =
+              await fetchCryptoTickerSummaries(pageCryptoSymbols);
+            const summaryMap = new Map(
+              tickerSummaries.map((summary) => [summary.ticker, summary]),
+            );
+            cryptoSummaries.forEach((summary) => {
+              summaryMap.set(summary.ticker, summary);
+            });
+            nextSummaries = [...summaryMap.values()];
+            setTickerSummaries(nextSummaries);
+          } catch (error) {
+            console.warn("Failed to refresh crypto quotes for page:", error);
+          }
+        }
+
+        updateAssetsState(paginatedAssets.records, nextSummaries);
       } catch (err) {
         console.error("Failed to load watchlist page:", err);
       } finally {
