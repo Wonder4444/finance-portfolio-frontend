@@ -75,7 +75,8 @@ export function HoldingsEditor({ assets, holdings, onRefresh, onAssetClick, isLo
             const bPinned = pinnedHoldings.includes(b.id);
             if (aPinned && !bPinned) return -1;
             if (!aPinned && bPinned) return 1;
-            return 0;
+            // Within the same group (both pinned or both unpinned), sort by balance descending
+            return (b.totalValue || 0) - (a.totalValue || 0);
         });
     }, [holdings, pinnedHoldings]);
 
@@ -256,6 +257,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, onAssetClick, isLo
                                 <th className="p-4">{t('quantity')}</th>
                                 <th className="p-4">{t('avgCost')}</th>
                                 <th className="p-4">{t('currentPrice')}</th>
+                                <th className="p-4">{t('value')}</th>
                                 <th className="p-4">{t('pnlYield')}</th>
                                 <th className="p-4 pr-8 text-right">{t('actions')}</th>
                             </tr>
@@ -263,13 +265,13 @@ export function HoldingsEditor({ assets, holdings, onRefresh, onAssetClick, isLo
                         <tbody className="divide-y divide-[var(--border)]/10">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={6} className="p-12 text-center">
+                                    <td colSpan={7} className="p-12 text-center">
                                         <Loader2 size={24} className="animate-spin mx-auto opacity-20" />
                                     </td>
                                 </tr>
                             ) : holdings.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-12 text-center opacity-30 italic font-mono text-xs">
+                                    <td colSpan={7} className="p-12 text-center opacity-30 italic font-mono text-xs">
                                         {t('noActivePositions')}
                                     </td>
                                 </tr>
@@ -324,7 +326,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, onAssetClick, isLo
                                                 type="number"
                                                 value={editAvgCost}
                                                 onChange={(e) => setEditAvgCost(parseFloat(e.target.value))}
-                                                className="bg-[var(--foreground)]/5 border border-[var(--border)] p-1 w-24 text-xs focus:outline-none"
+                                                className="bg-[var(--foreground)]/5 border border(--border) p-1 w-24 text-xs focus:outline-none"
                                             />
                                         ) : (
                                             formatCurrency(h.avgCost)
@@ -337,6 +339,9 @@ export function HoldingsEditor({ assets, holdings, onRefresh, onAssetClick, isLo
                                                 {h.changePercent >= 0 ? '+' : ''}{h.changePercent.toFixed(2)}%
                                             </span>
                                         </div>
+                                    </td>
+                                    <td className="p-4 font-mono">
+                                        <span className="font-bold">{formatCurrency((h.amount * h.price))}</span>
                                     </td>
                                     <td className="p-4 font-mono">
                                         <div className="flex flex-col">

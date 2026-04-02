@@ -95,13 +95,21 @@ export const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ asset, isOpe
   if (!isOpen || !asset) return null;
 
   let tvSymbol = asset.symbol;
-  if (asset.type === 'crypto') {
-    if (!tvSymbol.endsWith('USD') && !tvSymbol.endsWith('USDT')) tvSymbol = `BINANCE:${tvSymbol}USDT`;
-    else if (!tvSymbol.includes(':')) tvSymbol = `BINANCE:${tvSymbol}`;
-  } else if (asset.type === 'stock') {
+  
+  // Normalize symbol for TradingView
+  if (asset.type === 'crypto' || asset.symbol.includes('-')) {
+    let cleanSymbol = asset.symbol.replace('-', '');
+    if (!cleanSymbol.includes(':')) {
+      // Common crypto exchanges on TradingView
+      tvSymbol = `BINANCE:${cleanSymbol}`;
+      if (cleanSymbol.endsWith('USD')) tvSymbol = `COINBASE:${cleanSymbol}`;
+    } else {
+      tvSymbol = cleanSymbol;
+    }
+  } else if (asset.type === 'stock' || !asset.type) {
     if (!tvSymbol.includes(':')) {
-      const techStocks = ['AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA'];
-      tvSymbol = techStocks.includes(tvSymbol) ? `NASDAQ:${tvSymbol}` : `NYSE:${tvSymbol}`;
+      const nasdaqStocks = ['AAPL', 'MSFT', 'NVDA', 'GOOG', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'INTC', 'PYPL', 'ADBE', 'CSCO', 'PEP'];
+      tvSymbol = nasdaqStocks.includes(tvSymbol.toUpperCase()) ? `NASDAQ:${tvSymbol}` : `NYSE:${tvSymbol}`;
     }
   }
 
