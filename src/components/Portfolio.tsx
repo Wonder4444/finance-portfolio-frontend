@@ -13,7 +13,23 @@ interface PortfolioProps {
   theme?: 'light' | 'dark';
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = [
+  // Primary Palette
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', 
+  // Secondary Spectrum
+  '#6366f1', '#f43f5e', '#14b8a6', '#f97316', '#a855f7', '#ec4899',
+  '#22c55e', '#eab308', '#2dd4bf', '#fbbf24', '#f87171', '#c084fc',
+  // Deep & Moody
+  '#1d4ed8', '#047857', '#b45309', '#b91c1c', '#6d28d9', '#0e7490',
+  '#4338ca', '#be123c', '#0f766e', '#c2410c', '#7e22ce', '#9d174d',
+  // Vibrant & Neon
+  '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#22d3ee',
+  '#818cf8', '#fb7185', '#2fd1c5', '#fb923c', '#c084fc', '#f472b6',
+  '#4ade80', '#facc15', '#5eead4', '#fcd34d', '#fca5a5', '#d8b4fe',
+  // Professional Grays & Earth
+  '#94a3b8', '#64748b', '#475569', '#334155', '#78350f', '#451a03',
+  '#3f3f46', '#27272a', '#18181b', '#09090b', '#71717a', '#52525b'
+];
 const PieAny = Pie as any;
 
 export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, onAssetClick, theme = 'dark' }) => {
