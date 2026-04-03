@@ -78,6 +78,7 @@ const MOCK_NEWS: NewsItem[] = [
   {
     id: "1",
     time: "09:30 AM",
+    pubDate: Date.now() - 1000 * 60 * 60 * 5, // 5 hours ago
     title: "Market Open: Tech Stocks Lead Gains",
     summary:
       "Nasdaq opens higher as NVIDIA and Apple show strong momentum in pre-market trading.",
@@ -87,6 +88,7 @@ const MOCK_NEWS: NewsItem[] = [
   {
     id: "2",
     time: "11:15 AM",
+    pubDate: Date.now() - 1000 * 60 * 60 * 3, // 3 hours ago
     title: "Fed Signals Potential Rate Hold",
     summary:
       "Jerome Powell hints that interest rates might remain steady for the next quarter.",
@@ -96,6 +98,7 @@ const MOCK_NEWS: NewsItem[] = [
   {
     id: "3",
     time: "01:45 PM",
+    pubDate: Date.now() - 1000 * 60 * 60 * 1, // 1 hour ago
     title: "Crypto Regulation Update",
     summary:
       "New bill introduced in Congress aims to clarify stablecoin oversight.",
@@ -105,6 +108,7 @@ const MOCK_NEWS: NewsItem[] = [
   {
     id: "4",
     time: "03:00 PM",
+    pubDate: Date.now(), // now
     title: "Oil Prices Surge on Supply Concerns",
     summary:
       "Global oil benchmarks rise 2% following reports of production cuts.",
@@ -256,9 +260,9 @@ export default function App() {
 
   const openAssetModal = (symbol: string) => {
     // Try finding in allAssets first, then holdings
-    const asset = allAssets.find(a => a.symbol === symbol) || 
-                  holdings.find(h => h.symbol === symbol);
-    
+    const asset = allAssets.find(a => a.symbol === symbol) ||
+      holdings.find(h => h.symbol === symbol);
+
     if (asset) {
       // Map holding format to Asset if needed (they are mostly compatible)
       setAssetModalAsset(asset as Asset);
@@ -921,14 +925,14 @@ export default function App() {
                         {tickerSummaries.find(
                           (s) => s.ticker === selectedAsset.symbol,
                         ) && (
-                          <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">
-                            LIVE
-                          </span>
-                        )}
+                            <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded font-mono">
+                              LIVE
+                            </span>
+                          )}
                       </div>
-                      <button className="glass-button px-6 py-2 text-sm">
+                      {/* <button className="glass-button px-6 py-2 text-sm">
                         {t("trade")}
-                      </button>
+                      </button> */}
                     </div>
                     <div className="glass-panel flex-1 p-6 flex flex-col">
                       <div className="flex-1 min-h-0 relative w-full">
@@ -1022,7 +1026,7 @@ export default function App() {
         </div>
       </main>
 
-      <AssetDetailModal 
+      <AssetDetailModal
         asset={assetModalAsset}
         isOpen={isAssetModalOpen}
         onClose={() => setIsAssetModalOpen(false)}
