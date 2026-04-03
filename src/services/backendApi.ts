@@ -129,12 +129,13 @@ export async function getBackendAssetMap(): Promise<Map<string, Asset>> {
 
 /**
  * Fetch user holdings from the backend database for a specific user.
+ * API: GET /api/holdings/user/{userId}
  * We also fetch the asset details to join the data.
  */
-export async function getBackendHoldings(): Promise<Holding[]> {
-    const response = await fetch(`${BASE_URL}/holdings`);
+export async function getBackendHoldings(userId: number): Promise<Holding[]> {
+    const response = await fetch(`${BASE_URL}/holdings/user/${userId}`);
     if (!response.ok) {
-        throw new Error(`Failed to fetch holdings: ${response.statusText}`);
+        throw new Error(`Failed to fetch holdings for user ${userId}: ${response.statusText}`);
     }
     const result: ApiResult<BackendHolding[]> = await response.json();
 

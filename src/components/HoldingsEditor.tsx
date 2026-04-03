@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Asset, Holding } from '../types';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
 import { addHolding, updateHolding, deleteHolding, getBackendAssets } from '../services/backendApi';
+import { DEFAULT_USER_ID } from '../config/appConfig';
 
 interface HoldingsEditorProps {
     assets: Asset[];
@@ -88,7 +89,7 @@ export function HoldingsEditor({ assets, holdings, onRefresh, onAssetClick, isLo
         try {
             // Backend asset ID is like 'backend-1', we need the number
             const assetId = parseInt(selectedAssetId.replace('backend-', ''));
-            const success = await addHolding(2, assetId, quantity, avgCost);
+            const success = await addHolding(DEFAULT_USER_ID, assetId, quantity, avgCost);
             if (success) {
                 setIsAdding(false);
                 setSearchQuery('');
