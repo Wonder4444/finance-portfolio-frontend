@@ -50,6 +50,7 @@ import {
 } from "./services/backendApi";
 import { HoldingsEditor } from "./components/HoldingsEditor";
 import { AssetDetailModal } from "./components/AssetDetailModal";
+import { DEFAULT_USER_ID } from "./config/appConfig";
 
 // Static fund fallbacks (not available from the stock API or current backend)
 const STATIC_FUND_ASSETS: Asset[] = [
@@ -284,9 +285,9 @@ export default function App() {
       ] = await Promise.all([
         fetchAllTickers(),
         getBackendAssets(),
-        getBackendHoldings(),
-        getUser(2),
-        getWatchlistByUser(2),
+        getBackendHoldings(DEFAULT_USER_ID),
+        getUser(DEFAULT_USER_ID),
+        getWatchlistByUser(DEFAULT_USER_ID),
         getBackendAssetMap(),
       ]);
 
@@ -472,77 +473,109 @@ export default function App() {
       .slice(0, 20);
   }, [watchlistSearchQuery, allAssets, favoriteAssets]);
 
-  const handleAddFavorite = useCallback(async (asset: Asset) => {
-    const assetId = Number(String(asset.id).replace(/^backend-/, ""));
-    if (!Number.isFinite(assetId)) {
-      console.error(`Invalid asset id for watchlist add: ${asset.id}`);
-      return;
-    }
+  const refreshWatchlistFromServer = useCallback(
+    async (fallbackSelectedAsset?: Asset | null) => {
+      const [watchlistRecords, assetMap] = await Promise.all([
+        getWatchlistByUser(DEFAULT_USER_ID),
+        getBackendAssetMap(),
+      ]);
 
-    const ok = await addFavoriteAsset(2, assetId);
-    if (!ok) {
-      console.error(`Failed to add favorite asset: ${asset.symbol}`);
-      return;
-    }
-
-    const watchlistRecords = await getWatchlistByUser(2);
-    const created = watchlistRecords.find((r) => r.assetId === assetId);
-    if (created) {
-      setWatchlistRecordIdBySymbol((prev) => {
-        const next = new Map(prev);
-        next.set(asset.symbol, created.id);
-        return next;
+      const recordIdBySymbol = new Map<string, number>();
+      watchlistRecords.forEach((record) => {
+        if (record.symbol) {
+          recordIdBySymbol.set(record.symbol, record.id);
+        } else {
+          const mapped = assetMap.get(`backend-${record.assetId}`);
+          if (mapped) {
+            recordIdBySymbol.set(mapped.symbol, record.id);
+          }
+        }
       });
-    }
 
-    setFavoriteAssets((prev) => {
-      if (prev.some((a) => a.symbol === asset.symbol)) return prev;
-      return [...prev, asset];
-    });
-    setAssets((prev) => {
-      if (prev.some((a) => a.symbol === asset.symbol)) return prev;
-      return [...prev, asset];
-    });
-    setSelectedAsset((prev) => prev ?? asset);
-    setWatchlistSearchQuery("");
-  }, []);
+      const syncedFavorites = allAssets.filter((asset) =>
+        recordIdBySymbol.has(asset.symbol),
+      );
+
+      setWatchlistRecordIdBySymbol(recordIdBySymbol);
+      setFavoriteAssets(syncedFavorites);
+      setAssets(syncedFavorites);
+
+      setSelectedAsset((prev) => {
+        const current = prev ?? fallbackSelectedAsset ?? null;
+        if (!current) return syncedFavorites[0] ?? null;
+
+        const stillExists = syncedFavorites.some(
+          (item) => item.symbol === current.symbol,
+        );
+
+        if (stillExists) {
+          return (
+            syncedFavorites.find((item) => item.symbol === current.symbol) ??
+            current
+          );
+        }
+
+        return syncedFavorites[0] ?? null;
+      });
+    },
+    [allAssets],
+  );
+
+  const handleAddFavorite = useCallback(
+    async (asset: Asset) => {
+      const assetId = Number(String(asset.id).replace(/^backend-/, ""));
+      if (!Number.isFinite(assetId)) {
+        console.error(`Invalid asset id for watchlist add: ${asset.id}`);
+        return;
+      }
+
+      const ok = await addFavoriteAsset(DEFAULT_USER_ID, assetId);
+      if (!ok) {
+        console.error(`Failed to add favorite asset: ${asset.symbol}`);
+        return;
+      }
+
+      await refreshWatchlistFromServer(asset);
+      setWatchlistSearchQuery("");
+    },
+    [refreshWatchlistFromServer],
+  );
 
   const handleRemoveFavorite = useCallback(
     async (asset: Asset) => {
-      const previousFavorites = favoriteAssets;
       const previousSelected = selectedAsset;
-      const recordId = watchlistRecordIdBySymbol.get(asset.symbol);
 
-      const nextFavorites = previousFavorites.filter(
-        (a) => a.symbol !== asset.symbol,
-      );
+      let recordId = watchlistRecordIdBySymbol.get(asset.symbol);
+      if (!recordId) {
+        const [watchlistRecords, assetMap] = await Promise.all([
+          getWatchlistByUser(DEFAULT_USER_ID),
+          getBackendAssetMap(),
+        ]);
 
-      setFavoriteAssets(nextFavorites);
-      setAssets(nextFavorites);
-      setWatchlistRecordIdBySymbol((prev) => {
-        const next = new Map(prev);
-        next.delete(asset.symbol);
-        return next;
-      });
-
-      if (previousSelected?.symbol === asset.symbol) {
-        setSelectedAsset(nextFavorites[0] ?? null);
-      }
-
-      const ok = recordId ? await removeFavoriteAsset(recordId) : false;
-      if (!ok) {
-        setFavoriteAssets(previousFavorites);
-        setAssets(previousFavorites);
-        setSelectedAsset(previousSelected);
-        setWatchlistRecordIdBySymbol((prev) => {
-          const next = new Map(prev);
-          if (recordId) next.set(asset.symbol, recordId);
-          return next;
+        const record = watchlistRecords.find((r) => {
+          if (r.symbol) return r.symbol === asset.symbol;
+          const mapped = assetMap.get(`backend-${r.assetId}`);
+          return mapped?.symbol === asset.symbol;
         });
-        console.error(`Failed to remove favorite asset: ${asset.symbol}`);
+
+        recordId = record?.id;
       }
+
+      if (!recordId) {
+        console.error(`Watchlist record not found for asset: ${asset.symbol}`);
+        await refreshWatchlistFromServer(previousSelected);
+        return;
+      }
+
+      const ok = await removeFavoriteAsset(recordId);
+      if (!ok) {
+        console.error(`Failed to remove favorite asset: ${asset.symbol}`);
+        return;
+      }
+
+      await refreshWatchlistFromServer(previousSelected);
     },
-    [favoriteAssets, selectedAsset, watchlistRecordIdBySymbol],
+    [selectedAsset, watchlistRecordIdBySymbol, refreshWatchlistFromServer],
   );
 
   // Fetch Yahoo Finance RSS news

@@ -40,7 +40,7 @@ export const Watchlist: React.FC<WatchlistProps> = ({
           <input
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
-            placeholder="搜索标的并收藏"
+            placeholder="Search assets..."
             className="w-full bg-[var(--foreground)]/5 border border-[var(--border)] p-2 pl-9 pr-2 text-xs focus:outline-none focus:border-blue-500/50"
           />
         </div>
