@@ -22,7 +22,9 @@ export const NewsTimeline: React.FC<NewsTimelineProps> = ({ news }) => {
         {/* Vertical Line */}
         <div className="absolute left-6 top-4 bottom-4 w-[1px] bg-[var(--border)]" />
 
-        {news.map((item) => (
+        {[...news]
+          .sort((a, b) => (b.pubDate || 0) - (a.pubDate || 0))
+          .map((item) => (
           <div key={item.id} className="relative pl-8 group">
             {/* Dot */}
             <div className="absolute left-[21px] top-1.5 w-2 h-2 rounded-full z-10 border-2 border-[var(--background)] bg-gray-500" />

@@ -27,6 +27,7 @@ export interface NewsItem {
   time: string;
   title: string;
   category: string;
+  pubDate?: number;
   link?: string;
   summary?: string;
   impact?: "positive" | "negative" | "neutral" | string;

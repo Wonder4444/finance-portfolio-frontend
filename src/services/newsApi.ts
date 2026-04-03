@@ -40,14 +40,20 @@ function parseYahooRss(xmlText: string): NewsItem[] {
     const title =
       item.querySelector("title")?.textContent?.trim() || "Untitled";
     const categoryRaw = item.querySelector("category")?.textContent || "";
-    const pubDate = item.querySelector("pubDate")?.textContent || "";
+    const pubDateStr = item.querySelector("pubDate")?.textContent || "";
+    const parsedDate = new Date(pubDateStr);
+    const pubDate = Number.isNaN(parsedDate.getTime())
+      ? Date.now() - index * 1000
+      : parsedDate.getTime();
+
     const guid = item.querySelector("guid")?.textContent?.trim();
     const link = item.querySelector("link")?.textContent?.trim();
     const id = guid || link || `yahoo-news-${index}`;
 
     return {
       id,
-      time: formatTime(pubDate),
+      time: formatTime(pubDateStr),
+      pubDate,
       title,
       category: deriveCategory(categoryRaw, title),
       link,
