@@ -13,12 +13,33 @@ interface PortfolioProps {
   theme?: 'light' | 'dark';
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = [
+  // Primary Palette
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', 
+  // Secondary Spectrum
+  '#6366f1', '#f43f5e', '#14b8a6', '#f97316', '#a855f7', '#ec4899',
+  '#22c55e', '#eab308', '#2dd4bf', '#fbbf24', '#f87171', '#c084fc',
+  // Deep & Moody
+  '#1d4ed8', '#047857', '#b45309', '#b91c1c', '#6d28d9', '#0e7490',
+  '#4338ca', '#be123c', '#0f766e', '#c2410c', '#7e22ce', '#9d174d',
+  // Vibrant & Neon
+  '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#22d3ee',
+  '#818cf8', '#fb7185', '#2fd1c5', '#fb923c', '#c084fc', '#f472b6',
+  '#4ade80', '#facc15', '#5eead4', '#fcd34d', '#fca5a5', '#d8b4fe',
+  // Professional Grays & Earth
+  '#94a3b8', '#64748b', '#475569', '#334155', '#78350f', '#451a03',
+  '#3f3f46', '#27272a', '#18181b', '#09090b', '#71717a', '#52525b'
+];
+const PieAny = Pie as any;
 
 export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, onAssetClick, theme = 'dark' }) => {
   const { t } = useTranslation();
-  const totalValue = holdings.reduce((acc, h) => acc + h.totalValue, 0);
-  const totalProfit = holdings.reduce((acc, h) => acc + h.profit, 0);
+  
+  // Sort holdings by total value descending
+  const sortedHoldings = [...holdings].sort((a, b) => b.totalValue - a.totalValue);
+  
+  const totalValue = sortedHoldings.reduce((acc, h) => acc + h.totalValue, 0);
+  const totalProfit = sortedHoldings.reduce((acc, h) => acc + h.profit, 0);
   const totalProfitPercent = (totalValue - totalProfit) !== 0 ? (totalProfit / (totalValue - totalProfit)) * 100 : 0;
 
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -31,7 +52,7 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, o
     setActiveIndex(-1);
   };
 
-  const chartData = holdings.map(h => ({
+  const chartData = sortedHoldings.map(h => ({
     name: h.symbol,
     value: h.totalValue,
     fullName: h.name,
@@ -86,10 +107,10 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, o
               </button>
             )}
           </div>
-          <div className="h-[280px] relative">
+          <div className="h-[320px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
+                <PieAny
                   activeIndex={activeIndex}
                   activeShape={(props: any) => {
                     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
@@ -99,7 +120,7 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, o
                                 cx={cx}
                                 cy={cy}
                                 innerRadius={innerRadius}
-                                outerRadius={outerRadius + 6}
+                                outerRadius={outerRadius + 8}
                                 startAngle={startAngle}
                                 endAngle={endAngle}
                                 fill={fill}
@@ -112,21 +133,21 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, o
                   data={chartData}
                   onMouseEnter={onPieEnter}
                   onMouseLeave={onPieLeave}
-                  onClick={(data) => {
+                  onClick={(data: any) => {
                     if (data && data.activePayload && data.activePayload[0]) {
                         onAssetClick?.(data.activePayload[0].name);
                     }
                   }}
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={80}
+                  innerRadius={75}
+                  outerRadius={95}
                   paddingAngle={5}
                   dataKey="value"
                   stroke="none"
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, index, name }) => {
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, index, name }: any) => {
                     const RADIAN = Math.PI / 180;
-                    const radius = outerRadius + 12;
+                    const radius = outerRadius + 18;
                     const x = cx + radius * Math.cos(-midAngle * RADIAN);
                     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -137,59 +158,70 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, o
                         fill="var(--foreground)"
                         textAnchor={x > cx ? 'start' : 'end'}
                         dominantBaseline="central"
-                        className="text-[10px] font-mono font-bold opacity-60 pointer-events-none"
+                        className="text-[11px] font-mono font-bold opacity-60 pointer-events-none tracking-tight"
                       >
                         {name}
                       </text>
                     );
                   }}
-                  labelLine={{ stroke: 'var(--border)', strokeWidth: 1, opacity: 0.2 }}
+                  labelLine={{ stroke: 'var(--border)', strokeWidth: 1.5, opacity: 0.2 }}
                 >
                   {chartData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="focus:outline-none cursor-pointer" />
                   ))}
-                </Pie>
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={30} 
-                  iconType="circle" 
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
-                />
+                </PieAny>
               </PieChart>
             </ResponsiveContainer>
             
-            {/* Center Content */}
-            <div className="absolute top-[41%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                <p className="text-[9px] uppercase opacity-40 font-mono tracking-widest mb-0.5">{t('totalValue', 'Total Value')}</p>
-                <p className="text-xl font-light tracking-tighter leading-none">{formatCurrency(totalValue)}</p>
-                <p className="text-[8px] opacity-30 font-mono mt-1">{holdings.length} Assets</p>
+            {/* Center Content - Perfectly Centered */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none mt-[-5px]">
+                <p className="text-[10px] uppercase opacity-40 font-mono tracking-[0.2em] mb-1">{t('totalValue')}</p>
+                <p className="text-2xl font-bold tracking-tighter leading-none">{formatCurrency(totalValue)}</p>
+                <p className="text-[10px] opacity-30 font-mono mt-2 uppercase tracking-widest">{holdings.length} Assets</p>
             </div>
 
-            {/* Float Tooltip (Fixed Position to avoid overlap) */}
+            {/* Float Tooltip - Shown on Hover/Interaction */}
             {activeData && (
                 <div 
-                    className="absolute top-0 right-0 bg-slate-900/95 border border-white/20 p-3 shadow-2xl z-[100] min-w-[160px] animate-in slide-in-from-right-2 fade-in duration-200 backdrop-blur-md rounded-xl cursor-pointer"
+                    className="absolute top-4 right-4 bg-[var(--background)]/95 border border-[var(--border)] p-4 shadow-2xl z-[100] min-w-[200px] animate-in slide-in-from-right-4 fade-in duration-300 backdrop-blur-xl rounded-xl cursor-pointer"
                     onClick={() => onAssetClick?.(activeData.name)}
                 >
-                    <div className="flex items-center justify-between mb-1">
-                        <p className="font-bold text-sm leading-none text-white tracking-tight">{activeData.name}</p>
-                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded font-mono font-bold leading-none">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="font-bold text-base leading-none tracking-tight">{activeData.name}</p>
+                        <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-lg font-mono font-bold leading-none">
                             {activeData.percentage.toFixed(1)}%
                         </span>
                     </div>
-                    <p className="text-[10px] text-white/50 mb-2 truncate font-medium">{activeData.fullName}</p>
-                    <div className="pt-2 border-t border-white/10">
-                        <div className="flex justify-between items-center text-[10px] gap-2">
-                            <span className="text-white/40 uppercase font-mono tracking-widest whitespace-nowrap">Balance</span>
-                            <span className="text-white font-mono font-bold ml-auto">{formatCurrency(activeData.value)}</span>
+                    <p className="text-xs opacity-40 mb-3 truncate font-medium">{activeData.fullName}</p>
+                    <div className="pt-3 border-t border-[var(--border)]">
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="opacity-40 uppercase font-mono tracking-widest">Balance</span>
+                            <span className="font-mono font-bold">{formatCurrency(activeData.value)}</span>
                         </div>
-                    </div>
-                    <div className="mt-2 text-[8px] text-blue-400 font-mono uppercase tracking-[0.2em] text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        Click for terminal view
                     </div>
                 </div>
             )}
+          </div>
+
+          {/* Custom Responsive Legend - Outside the Chart to avoid centering issues */}
+          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 px-4">
+             {chartData.map((entry, index) => (
+               <div 
+                 key={`legend-${index}`} 
+                 className="flex items-center gap-2 cursor-pointer group"
+                 onMouseEnter={() => setActiveIndex(index)}
+                 onMouseLeave={() => setActiveIndex(-1)}
+                 onClick={() => onAssetClick?.(entry.name)}
+               >
+                 <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                 <span className={cn(
+                   "text-[11px] font-mono font-bold uppercase transition-all",
+                   activeIndex === index ? "text-blue-500 scale-105" : "opacity-40 hover:opacity-100"
+                 )}>
+                   {entry.name}
+                 </span>
+               </div>
+             ))}
           </div>
         </div>
 
@@ -204,7 +236,7 @@ export const Portfolio: React.FC<PortfolioProps> = ({ holdings, onManageClick, o
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]/10">
-              {holdings.map((h) => (
+              {sortedHoldings.map((h) => (
                 <tr key={h.id} className="group hover:bg-[var(--foreground)]/5 transition-colors cursor-default">
                   <td className="p-3">
                     <div 
